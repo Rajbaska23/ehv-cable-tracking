@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EHV Cable Tracking - Executive Access Portal</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Executive PDF & PPT Generator Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col">
+
+  <!-- ==================== SCREEN 1: UNIFIED LOGIN GATEWAY ==================== -->
+  <div id="screenLogin" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-md p-8 rounded-2xl shadow-2xl space-y-6">
+      
+      <!-- Brand Header -->
+      <div class="text-center space-y-2">
+        <div class="inline-flex items-center justify-center bg-amber-500 text-slate-950 p-3 rounded-xl shadow-lg shadow-amber-500/20 font-bold">
+          <i class="fa-solid fa-bolt-lightning text-2xl"></i>
+        </div>
+        <h1 class="text-2xl font-black text-slate-100 tracking-wide">EHV Cable Tracking</h1>
+        <p class="text-xs text-amber-400 font-semibold uppercase tracking-wider">Extra High Voltage Underground Circuit System</p>
+      </div>
+
+      <!-- Login Form -->
+      <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4 text-xs">
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">User ID / Username</label>
+          <div class="relative">
+            <i class="fa-solid fa-user absolute left-3 top-3 text-slate-500"></i>
+            <input type="text" id="inputUsername" required placeholder="Enter User ID (e.g., admin)" 
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-2.5 text-slate-200 focus:outline-none focus:border-amber-500 transition">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">Password</label>
+          <div class="relative">
+            <i class="fa-solid fa-lock absolute left-3 top-3 text-slate-500"></i>
+            <input type="password" id="inputPassword" required placeholder="••••••••••••" 
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-2.5 text-slate-200 focus:outline-none focus:border-amber-500 transition">
+          </div>
+        </div>
+
+        <div id="loginError" class="hidden text-red-400 text-[11px] bg-red-950/50 border border-red-800/60 p-2.5 rounded-lg flex items-center gap-2">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span>Invalid User ID or Password. Select from demo accounts below.</span>
+        </div>
+
+        <button type="submit" class="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold py-3 rounded-lg shadow-lg text-xs transition transform active:scale-95 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-right-to-bracket"></i> Sign In to EHV Portal
+        </button>
+      </form>
+
+      <!-- Quick Fill Credentials Helper -->
+      <div class="border-t border-slate-800 pt-4 space-y-2">
+        <div class="text-[10px] text-slate-500 uppercase font-bold text-center tracking-wider">Quick Demo Credentials (Click to Select)</div>
+        <div class="grid grid-cols-2 gap-2 text-[11px]">
+          <button onclick="fillAuth('admin', 'Admin@Cable2026!')" class="bg-slate-800 hover:bg-slate-700/80 border border-slate-700 p-2 rounded text-left transition">
+            <div class="font-bold text-amber-400"><i class="fa-solid fa-shield-halved me-1"></i> Admin</div>
+            <div class="text-[9px] text-slate-400">admin / Admin@...</div>
+          </button>
+          <button onclick="fillAuth('pm_lead', 'PM#Trace2026')" class="bg-slate-800 hover:bg-slate-700/80 border border-slate-700 p-2 rounded text-left transition">
+            <div class="font-bold text-blue-400"><i class="fa-solid fa-user-tie me-1"></i> Project Manager</div>
+            <div class="text-[9px] text-slate-400">pm_lead / PM#...</div>
+          </button>
+          <button onclick="fillAuth('civil_lead', 'Civil@2026')" class="bg-slate-800 hover:bg-slate-700/80 border border-slate-700 p-2 rounded text-left transition">
+            <div class="font-bold text-emerald-400"><i class="fa-solid fa-hard-hat me-1"></i> Civil Lead</div>
+            <div class="text-[9px] text-slate-400">civil_lead / Civil...</div>
+          </button>
+          <button onclick="fillAuth('qc_inspector', 'QC@2026')" class="bg-slate-800 hover:bg-slate-700/80 border border-slate-700 p-2 rounded text-left transition">
+            <div class="font-bold text-purple-400"><i class="fa-solid fa-clipboard-check me-1"></i> Quality Inspector</div>
+            <div class="text-[9px] text-slate-400">qc_inspector / QC...</div>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== SCREEN 2: MAIN APPLICATION DASHBOARD ==================== -->
+  <div id="screenDashboard" class="hidden min-h-screen flex flex-col">
+    
+    <!-- TOP NAVIGATION HEADER -->
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-3 flex justify-between items-center sticky top-0 z-40">
+      <div class="flex items-center space-x-3">
+        <div class="bg-amber-500 text-slate-950 p-2 rounded-lg font-bold shadow-md shadow-amber-500/20">
+          <i class="fa-solid fa-bolt-lightning text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-sm font-bold text-slate-100 flex items-center gap-2">
+            EHV Cable Tracking <span class="bg-amber-500/10 text-amber-400 text-[10px] px-2 py-0.5 rounded border border-amber-500/30">132kV / 400kV Circuit</span>
+          </h1>
+          <p class="text-[11px] text-slate-400">Northern Cluster Circuit Line 1 • Project ID: <span class="font-mono text-amber-400">EHV-2026-001</span></p>
+        </div>
+      </div>
+
+      <!-- User Session Controls -->
+      <div class="flex items-center space-x-4">
+        <div class="flex items-center space-x-2 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-xs">
+          <i class="fa-solid fa-user-circle text-amber-400 text-base"></i>
+          <div>
+            <div class="font-bold text-slate-200" id="userDisplayName">System Admin</div>
+            <div class="text-[9px] uppercase font-bold text-amber-400" id="userRoleBadge">ADMIN PRIVILEGES</div>
+          </div>
+        </div>
+
+        <button id="btnExecReport" onclick="openReportModal()" class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 px-3.5 py-1.5 rounded-lg text-xs font-bold shadow border border-amber-400/40 flex items-center gap-2">
+          <i class="fa-solid fa-file-export"></i> Executive Report
+        </button>
+
+        <button onclick="handleLogout()" class="bg-slate-800 hover:bg-red-900/40 text-slate-300 hover:text-red-300 p-2 rounded-lg border border-slate-700 text-xs transition">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- CONTENT LAYOUT -->
+    <div class="flex-1 flex overflow-hidden">
+
+      <!-- SIDEBAR NAVIGATION -->
+      <aside class="w-64 bg-slate-900/80 border-r border-slate-800 p-4 flex flex-col justify-between shrink-0">
+        <nav class="space-y-1.5">
+          <div class="text-[10px] uppercase font-bold text-slate-500 px-3 mb-2 tracking-wider">EHV Modules</div>
+
+          <!-- ADMIN SETUP MODULE (Admin Access Only) -->
+          <button id="navAdminSetup" onclick="switchTab('secAdminSetup')" class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-xs font-semibold flex items-center justify-between bg-amber-500/10 text-amber-400 border border-amber-500/30">
+            <span><i class="fa-solid fa-shield-halved w-5"></i> Admin Ingestion & Setup</span>
+            <span class="text-[9px] bg-amber-900/80 text-amber-200 px-1.5 py-0.5 rounded font-bold">ADMIN</span>
+          </button>
+
+          <!-- MASTER DASHBOARD MODULE (PM & Admin View) -->
+          <button id="navMasterPM" onclick="switchTab('secMasterPM')" class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-xs font-semibold flex items-center justify-between text-slate-300 hover:bg-slate-800">
+            <span><i class="fa-solid fa-chart-pie w-5"></i> Master SLD Overview</span>
+            <i class="fa-solid fa-chevron-right text-[10px]"></i>
+          </button>
+
+          <!-- DEPARTMENT ENTRY MODULE (Engineers & Admin) -->
+          <button id="navDeptEntry" onclick="switchTab('secDeptEntry')" class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-xs font-semibold flex items-center justify-between text-slate-300 hover:bg-slate-800">
+            <span><i class="fa-solid fa-pen-to-square w-5"></i> Field Entry Portal</span>
+            <i class="fa-solid fa-chevron-right text-[10px]"></i>
+          </button>
+        </nav>
+
+        <!-- System Baseline Snapshot -->
+        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2 text-xs">
+          <div class="flex justify-between items-center text-[10px] uppercase font-bold text-slate-400 border-b border-slate-800 pb-1">
+            <span>System Phase</span>
+            <span id="txtBaselineStatus" class="text-amber-400">Phase 1: Setup</span>
+          </div>
+          <div class="flex justify-between text-[11px]">
+            <span class="text-slate-400">EHV Route:</span>
+            <span class="font-mono font-bold text-slate-200" id="dispRouteLength">1,250 m</span>
+          </div>
+          <div class="flex justify-between text-[11px]">
+            <span class="text-slate-400">Joint Bays:</span>
+            <span class="font-mono font-bold text-slate-200">2 Bays (EHV-JB)</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN VIEWPORT -->
+      <main class="flex-1 overflow-y-auto p-6 bg-slate-950 space-y-6">
+
+        <!-- SECTION 1: ADMIN CONTROL CENTER (ADMIN ONLY) -->
+        <section id="secAdminSetup" class="space-y-6">
+          <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-6">
+            <div class="flex justify-between items-start border-b border-slate-800 pb-4">
+              <div>
+                <h2 class="text-base font-bold text-amber-400 flex items-center gap-2">
+                  <i class="fa-solid fa-sliders"></i> EHV Admin Control & Ingestion Setup
+                </h2>
+                <p class="text-xs text-slate-400 mt-1">Upload CAD alignment drawings, BOQ Excel files, and PDF specifications for EHV cable route setup.</p>
+              </div>
+              <button onclick="lockBaseline()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
+                <i class="fa-solid fa-lock"></i> Lock Baseline
+              </button>
+            </div>
+
+            <!-- Ingestion Upload Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div onclick="simulateUpload('CAD Route Drawing')" class="border-2 border-dashed border-slate-700 hover:border-amber-500 rounded-xl p-5 text-center bg-slate-950/50 cursor-pointer transition">
+                <i class="fa-solid fa-map-location-dot text-2xl text-amber-400 mb-2"></i>
+                <h3 class="text-xs font-bold text-slate-200">Upload CAD Route (.DXF)</h3>
+                <p class="text-[10px] text-slate-400 mt-1">Parses EHV polyline lengths & joint nodes</p>
+              </div>
+
+              <div onclick="simulateUpload('BOQ Schedule')" class="border-2 border-dashed border-slate-700 hover:border-emerald-500 rounded-xl p-5 text-center bg-slate-950/50 cursor-pointer transition">
+                <i class="fa-solid fa-file-excel text-2xl text-emerald-400 mb-2"></i>
+                <h3 class="text-xs font-bold text-slate-200">Upload Excel BOQ (.XLSX)</h3>
+                <p class="text-[10px] text-slate-400 mt-1">Extracts cable drums & joint schedules</p>
+              </div>
+
+              <div onclick="simulateUpload('PDF Manuals')" class="border-2 border-dashed border-slate-700 hover:border-red-500 rounded-xl p-5 text-center bg-slate-950/50 cursor-pointer transition">
+                <i class="fa-solid fa-file-pdf text-2xl text-red-400 mb-2"></i>
+                <h3 class="text-xs font-bold text-slate-200">Upload EHV PDF Specs</h3>
+                <p class="text-[10px] text-slate-400 mt-1">Links joint bay installation manuals</p>
+              </div>
+            </div>
+
+            <!-- Route Parameters Configuration -->
+            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-4 text-xs">
+              <h3 class="font-bold text-slate-300 uppercase tracking-wider text-[11px]">Edit Route & Circuit Parameters</h3>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-slate-400 mb-1">Total Route Length (Meters)</label>
+                  <input type="number" id="editRouteMeters" value="1250" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-200 font-mono">
+                </div>
+                <div>
+                  <label class="block text-slate-400 mb-1">Cluster Name</label>
+                  <input type="text" value="Northern Cluster" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-200">
+                </div>
+                <div>
+                  <label class="block text-slate-400 mb-1">Voltage Rating</label>
+                  <input type="text" value="132kV / 400kV Single Core" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-200">
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 2: MASTER SLD DASHBOARD -->
+        <section id="secMasterPM" class="space-y-6 hidden">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+              <div class="text-[10px] text-slate-400 font-bold uppercase">EHV Cable Pulling Progress</div>
+              <div class="text-xl font-bold font-mono text-emerald-400 mt-1">680m / 1,250m</div>
+              <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                <div class="bg-emerald-500 h-full" style="width: 54.4%"></div>
+              </div>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+              <div class="text-[10px] text-slate-400 font-bold uppercase">Civil Trenching</div>
+              <div class="text-xl font-bold font-mono text-blue-400 mt-1">920m (73.6%)</div>
+              <span class="text-[10px] text-slate-400">4 Heavy Excavators Active</span>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+              <div class="text-[10px] text-slate-400 font-bold uppercase">Joint Bay Inspection</div>
+              <div class="text-xl font-bold font-mono text-amber-400 mt-1">1 Open NCR</div>
+              <span class="text-[10px] text-amber-400">EHV-JB-01 Sheath Test Pending</span>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+              <div class="text-[10px] text-slate-400 font-bold uppercase">Procurement PO</div>
+              <div class="text-xl font-bold font-mono text-slate-100 mt-1">Released</div>
+              <span class="text-[10px] text-emerald-400">EHV Drums Delivered</span>
+            </div>
+          </div>
+
+          <!-- SLD Canvas -->
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <h2 class="text-xs font-bold text-slate-200 mb-3 flex items-center gap-2 uppercase tracking-wider">
+              <i class="fa-solid fa-network-wired text-amber-400"></i> Master EHV Single Line Diagram (SLD)
+            </h2>
+            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 overflow-x-auto flex justify-center">
+              <svg width="750" height="120" viewBox="0 0 750 120">
+                <line x1="60" y1="60" x2="260" y2="60" stroke="#10B981" stroke-width="8" stroke-linecap="round"/>
+                <text x="160" y="45" text-anchor="middle" fill="#10B981" font-size="10" font-weight="bold">350m Laid (100%)</text>
+                
+                <line x1="260" y1="60" x2="480" y2="60" stroke="#F59E0B" stroke-width="8" stroke-dasharray="6 4"/>
+                <text x="370" y="45" text-anchor="middle" fill="#F59E0B" font-size="10" font-weight="bold">330m / 450m (73%)</text>
+
+                <line x1="480" y1="60" x2="680" y2="60" stroke="#475569" stroke-width="8" stroke-linecap="round"/>
+                <text x="580" y="45" text-anchor="middle" fill="#64748b" font-size="10" font-weight="bold">0m / 450m (0%)</text>
+
+                <rect x="20" y="35" width="40" height="50" rx="6" fill="#1e293b" stroke="#10B981" stroke-width="2"/>
+                <text x="40" y="65" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold">SS-A</text>
+
+                <circle cx="260" cy="60" r="14" fill="#1e293b" stroke="#EF4444" stroke-width="2"/>
+                <text x="260" y="64" text-anchor="middle" fill="#fff" font-size="8" font-weight="bold">JB-1</text>
+
+                <circle cx="480" cy="60" r="14" fill="#1e293b" stroke="#F59E0B" stroke-width="2"/>
+                <text x="480" y="64" text-anchor="middle" fill="#fff" font-size="8" font-weight="bold">JB-2</text>
+
+                <rect x="680" y="35" width="40" height="50" rx="6" fill="#1e293b" stroke="#64748b" stroke-width="2"/>
+                <text x="700" y="65" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold">SS-B</text>
+              </svg>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 3: FIELD ENTRY PORTAL -->
+        <section id="secDeptEntry" class="space-y-6 hidden">
+          <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
+            <h2 class="text-sm font-bold text-amber-400 uppercase tracking-wider border-b border-slate-800 pb-2" id="deptPortalTitle">
+              EHV Field Daily Progress Entry
+            </h2>
+            <form onsubmit="submitDeptLog(event)" class="space-y-4 text-xs">
+              <div id="deptFieldsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              </div>
+              <button type="submit" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2.5 rounded-lg shadow transition">
+                Submit Progress Record
+              </button>
+            </form>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- EXECUTIVE REPORT MODAL -->
+  <div id="reportModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-lg p-6 rounded-2xl shadow-2xl space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-file-export text-amber-400"></i> Generate EHV Executive Summary
+        </h3>
+        <button onclick="closeReportModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Target Stakeholder</label>
+          <select id="reportAudience" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-200">
+            <option value="Cluster Head & Department Head">Cluster Head & Department Head</option>
+            <option value="Client / Utility Representative">Client / Utility Representative</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-800 flex justify-end space-x-3">
+        <button onclick="downloadPDF()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2 rounded text-xs flex items-center gap-2">
+          <i class="fa-solid fa-file-pdf"></i> Download EHV PDF
+        </button>
+        <button onclick="downloadPPT()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-4 py-2 rounded text-xs flex items-center gap-2">
+          <i class="fa-solid fa-file-powerpoint"></i> Download EHV PPTX
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLIENT-SIDE SCRIPTING -->
+  <script>
+    const USER_DB = {
+      'admin': { pass: 'Admin@Cable2026!', name: 'System Admin', role: 'ADMIN', badge: 'ADMIN PRIVILEGES' },
+      'pm_lead': { pass: 'PM#Trace2026', name: 'Eng. Sarah Jenkins', role: 'PM', badge: 'PROJECT MANAGER' },
+      'civil_lead': { pass: 'Civil@2026', name: 'Eng. Marcus Vance', role: 'CIVIL', badge: 'CIVIL LEAD' },
+      'qc_inspector': { pass: 'QC@2026', name: 'Insp. David Ross', role: 'QC', badge: 'QC INSPECTOR' }
+    };
+
+    let currentUser = null;
+
+    function fillAuth(u, p) {
+      document.getElementById('inputUsername').value = u;
+      document.getElementById('inputPassword').value = p;
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const u = document.getElementById('inputUsername').value.trim();
+      const p = document.getElementById('inputPassword').value.trim();
+      const err = document.getElementById('loginError');
+
+      if (USER_DB[u] && USER_DB[u].pass === p) {
+        err.classList.add('hidden');
+        currentUser = USER_DB[u];
+        
+        document.getElementById('screenLogin').classList.add('hidden');
+        document.getElementById('screenDashboard').classList.remove('hidden');
+
+        applyUserSecurityProfile();
+      } else {
+        err.classList.remove('hidden');
+      }
+    }
+
+    function handleLogout() {
+      currentUser = null;
+      document.getElementById('screenDashboard').classList.add('hidden');
+      document.getElementById('screenLogin').classList.remove('hidden');
+      document.getElementById('inputPassword').value = '';
+    }
+
+    function applyUserSecurityProfile() {
+      document.getElementById('userDisplayName').innerText = currentUser.name;
+      document.getElementById('userRoleBadge').innerText = currentUser.badge;
+
+      const btnAdminNav = document.getElementById('navAdminSetup');
+      const btnExecReport = document.getElementById('btnExecReport');
+
+      if (currentUser.role === 'ADMIN') {
+        btnAdminNav.classList.remove('hidden');
+        btnExecReport.classList.remove('hidden');
+        switchTab('secAdminSetup');
+      } else if (currentUser.role === 'PM') {
+        btnAdminNav.classList.add('hidden');
+        btnExecReport.classList.remove('hidden');
+        switchTab('secMasterPM');
+      } else {
+        btnAdminNav.classList.add('hidden');
+        btnExecReport.classList.add('hidden');
+        switchTab('secDeptEntry');
+      }
+
+      renderDeptFormFields();
+    }
+
+    function switchTab(tabId) {
+      ['secAdminSetup', 'secMasterPM', 'secDeptEntry'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+      document.getElementById(tabId).classList.remove('hidden');
+    }
+
+    function renderDeptFormFields() {
+      const container = document.getElementById('deptFieldsContainer');
+      const title = document.getElementById('deptPortalTitle');
+
+      if (currentUser.role === 'CIVIL' || currentUser.role === 'ADMIN') {
+        title.innerText = 'EHV Civil Excavation & Trenching Progress Entry';
+        container.innerHTML = `
+          <div>
+            <label class="block text-slate-400 mb-1">EHV Cable Section / Chainage ID</label>
+            <input type="text" value="CH 0350+00 - CH 0800+00" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-200">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Actual Trenching Completed (Meters)</label>
+            <input type="number" value="120" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-200">
+          </div>
+        `;
+      } else if (currentUser.role === 'QC') {
+        title.innerText = 'EHV Quality Control (QC) Joint Inspection Entry';
+        container.innerHTML = `
+          <div>
+            <label class="block text-slate-400 mb-1">Target EHV Joint Bay</label>
+            <select class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-200">
+              <option>Joint Bay EHV-JB-01</option>
+              <option>Joint Bay EHV-JB-02</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Raise New NCR Description</label>
+            <input type="text" placeholder="E.g., outer sheath testing failed..." class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-200">
+          </div>
+        `;
+      }
+    }
+
+    function simulateUpload(type) {
+      alert(`[ADMIN ACTION] ${type} uploaded and parsed successfully.`);
+    }
+
+    function lockBaseline() {
+      document.getElementById('txtBaselineStatus').innerText = 'Phase 2: Active Tracking';
+      document.getElementById('txtBaselineStatus').className = 'text-emerald-400 font-bold';
+      alert('EHV Cable Circuit baseline locked successfully. Active tracking initiated.');
+    }
+
+    function submitDeptLog(e) {
+      e.preventDefault();
+      alert('EHV progress log submitted. Master SLD updated.');
+    }
+
+    function openReportModal() { document.getElementById('reportModal').classList.remove('hidden'); }
+    function closeReportModal() { document.getElementById('reportModal').classList.add('hidden'); }
+
+    function downloadPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text("EHV CABLE TRACKING - EXECUTIVE REVIEW REPORT", 14, 20);
+      doc.text(`Stakeholder: ${document.getElementById('reportAudience').value}`, 14, 30);
+      doc.text("Total EHV Route Length: 1,250 Meters", 14, 40);
+      doc.text("EHV Cable Pulling Progress: 680 Meters (54.4%)", 14, 50);
+      doc.save("EHV_Cable_Tracking_Report.pdf");
+      closeReportModal();
+    }
+
+    function downloadPPT() {
+      let pptx = new PptxGenJS();
+      let slide = pptx.addSlide();
+      slide.addText("EHV CABLE TRACKING DECK", { x: 1, y: 1, fontSize: 24, color: "F59E0B" });
+      slide.addText("Total Route: 1,250m | EHV Pulling Progress: 54.4%", { x: 1, y: 2, fontSize: 16 });
+      pptx.writeFile({ fileName: "EHV_Cable_Tracking_Deck.pptx" });
+      closeReportModal();
+    }
+  </script>
+</body>
+</html>
