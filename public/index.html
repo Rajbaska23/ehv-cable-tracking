@@ -131,7 +131,7 @@
                                 </label>
                                 <label class="border border-gray-700 p-2 rounded bg-gray-800 cursor-pointer text-center hover:border-amber-500 col-span-2">
                                     <span id="labelPdf">Schematic Diagram (.pdf)</span>
-                                    <input type="file" id="pdfFileInput" accept=".pdf" class="hidden" onchange="updateFileLabel(this, 'labelPdf')">
+                                    <input type="file" id="pdfFileInput" accept=".pdf,.txt" class="hidden" onchange="updateFileLabel(this, 'labelPdf')">
                                 </label>
                             </div>
 
@@ -218,15 +218,11 @@
                         </div>
                     </div>
 
-                    <!-- Schematic Circuit Highlighted with Dynamic Lengths -->
+                    <!-- Schematic Circuit Highlighted parsed from uploaded PDF/Schematic File -->
                     <div class="bg-gray-900 border border-gray-800 p-6 rounded text-center space-y-2">
-                        <p class="text-xs font-bold uppercase text-amber-400 tracking-wider">Circuit Schematic (SLD) Progress Highlighted</p>
-                        <div class="flex justify-center items-center space-x-3 text-xs font-mono pt-4 overflow-x-auto">
-                            <span class="bg-amber-500/20 border border-amber-500/50 px-3 py-1.5 rounded text-amber-300">Start Substation</span>
-                            <span id="schematicLine1" class="text-emerald-400 font-bold">====== 1800m ======></span>
-                            <span class="bg-amber-500/20 border border-amber-500/50 px-3 py-1.5 rounded text-emerald-300">JB1 Joint Bay</span>
-                            <span id="schematicLine2" class="text-gray-400 font-bold">------ 1200m ------</span>
-                            <span class="bg-gray-800 border border-gray-700 px-3 py-1.5 rounded text-gray-300">End Substation</span>
+                        <p class="text-xs font-bold uppercase text-amber-400 tracking-wider">Circuit Schematic (SLD) Progress Highlighted (From Uploaded Diagram)</p>
+                        <div id="schematicDisplayBox" class="flex justify-center items-center space-x-3 text-xs font-mono pt-4 overflow-x-auto text-emerald-400 font-bold">
+                            SS Substation -> [1800m] -> JB1 Joint Bay -> [1200m] -> SS/2 Substation
                         </div>
                     </div>
 
@@ -253,7 +249,7 @@
 
                 <!-- Sub-Tab 2: Procurement Tab -->
                 <div id="pmProcTab" class="pm-sub-content space-y-4 hidden">
-                    <h4 class="text-xs font-bold text-amber-400 uppercase">Detailed Material Status (Parsed from Uploaded Material Tracker)</h4>
+                    <h4 class="text-xs font-bold text-amber-400 uppercase">Detailed Material Status (Full Parsed List from Uploaded Material Tracker)</h4>
                     <div class="overflow-x-auto">
                         <table class="w-full text-xs text-left text-gray-300">
                             <thead class="bg-gray-800 uppercase text-[10px]">
@@ -297,16 +293,14 @@
                 <form id="progressUpdateForm" class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
                     <div>
                         <label class="block text-gray-400 mb-1">Select Circuit / Project</label>
-                        <select id="fieldCircuit" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white">
+                        <select id="fieldCircuit" onchange="updateFieldActivities(this.value)" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white">
                             <!-- Dynamic project options -->
                         </select>
                     </div>
                     <div>
-                        <label class="block text-gray-400 mb-1">Select Activity</label>
+                        <label class="block text-gray-400 mb-1">Select Activity (from BOQ)</label>
                         <select id="fieldActivity" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white">
-                            <option value="Trenching & Excavation">Civil: Trenching & Excavation</option>
-                            <option value="132kV Cable Pulling">Electrical: 132kV Cable Pulling</option>
-                            <option value="Joint Bay Assembly">QAQC: Joint Bay Inspection</option>
+                            <!-- Dynamic BOQ options -->
                         </select>
                     </div>
                     <div>
@@ -374,6 +368,7 @@
     <script>
         let currentUser = null;
         let currentProjectId = 'prj-1';
+        let allLoadedProjects = [];
 
         function fillCreds(role) {
             document.getElementById('loginUser').value = role;
@@ -450,6 +445,8 @@
                 const data = await res.json();
 
                 if (data.success && data.projects) {
+                    allLoadedProjects = data.projects;
+
                     // Update PM project selection buttons
                     const pmBtnContainer = document.getElementById('pmProjectButtons');
                     if (pmBtnContainer) {
@@ -489,11 +486,26 @@
 
                     if (data.projects.length > 0) {
                         loadPmProject(data.projects[0].id);
+                        updateFieldActivities(data.projects[0].id);
                     }
                 }
             } catch (e) {
                 console.error("Error loading project list:", e);
             }
+        }
+
+        function updateFieldActivities(prjId) {
+            const prj = allLoadedProjects.find(p => p.id === prjId) || allLoadedProjects[0];
+            const activitySelect = document.getElementById('fieldActivity');
+            if (!activitySelect || !prj || !prj.boq) return;
+
+            activitySelect.innerHTML = '';
+            prj.boq.forEach(b => {
+                const opt = document.createElement('option');
+                opt.value = b.item;
+                opt.textContent = `${b.item} (Total: ${b.qty} ${b.unit || 'm'})`;
+                activitySelect.appendChild(opt);
+            });
         }
 
         async function loadPmProject(prjId) {
@@ -515,11 +527,11 @@
                     document.getElementById('pmTargetEnd').textContent = prj.targetEndDate || '2026-11-30';
                     document.getElementById('pmForecastEnd').textContent = prj.forecastEndDate || '2026-12-15';
 
-                    // Update SLD graphic segments dynamically
-                    const seg1 = prj.segment1Len || 1500;
-                    const seg2 = prj.segment2Len || 1000;
-                    document.getElementById('schematicLine1').textContent = `====== ${seg1}m ======>`;
-                    document.getElementById('schematicLine2').textContent = `------ ${seg2}m ------`;
+                    // Update Schematic SLD Display box from uploaded schematic file data
+                    const sldBox = document.getElementById('schematicDisplayBox');
+                    if (sldBox) {
+                        sldBox.textContent = prj.schematicFile || `Circuit Route Length: ${prj.totalRouteLength}m`;
+                    }
 
                     // Update BOQ Table dynamically with parsed quantities
                     const boqBody = document.getElementById('pmBoqTable');
@@ -534,18 +546,21 @@
                         boqBody.innerHTML = '<tr><td colspan="4" class="p-2 text-gray-500">No BOQ items parsed yet.</td></tr>';
                     }
 
-                    // Update Materials table
+                    // Update Full Materials Table from uploaded tracker
                     const matBody = document.getElementById('pmMaterialTable');
                     matBody.innerHTML = '';
                     if (prj.materials && prj.materials.length > 0) {
                         prj.materials.forEach(m => {
                             const tr = document.createElement('tr');
-                            tr.innerHTML = `<td class="p-2">${m.item}</td><td class="p-2">${m.qty}</td><td class="p-2 text-emerald-400 font-semibold">${m.status}</td>`;
+                            tr.innerHTML = `<td class="p-2 font-semibold text-white">${m.item}</td><td class="p-2">${m.qty}</td><td class="p-2 text-emerald-400 font-semibold">${m.status}</td>`;
                             matBody.appendChild(tr);
                         });
                     } else {
                         matBody.innerHTML = '<tr><td colspan="3" class="p-2 text-gray-500">No material tracking records attached yet.</td></tr>';
                     }
+
+                    // Update Engineer portal dropdown activities for this project
+                    updateFieldActivities(prjId);
                 }
             } catch (e) {
                 console.error("Error loading PM project details:", e);
@@ -591,10 +606,6 @@
             } catch (e) {
                 alert("Error resetting progress: " + e.message);
             }
-        }
-
-        function adminAction(type) {
-            alert("Admin action executed: " + type);
         }
 
         // Direct FormData Submit Handler with loading indicator & immediate dashboard refresh
@@ -652,7 +663,6 @@
                     
                     await loadAllProjects();
 
-                    // Instantly switch PM view to newly created project and load dashboard
                     if (data.project && data.project.id) {
                         loadPmProject(data.project.id);
                     }
