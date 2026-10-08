@@ -1,99 +1,161 @@
 const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
 const path = require('path');
-const multer = require('multer');
 const fs = require('fs');
+const multer = require('multer');
+const XLSX = require('xlsx');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-// Ensure local file uploads directory exists
+// Middleware to parse incoming JSON and form data
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Ensure 'uploads' directory exists on Render ephemeral storage
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Security & Parsing Middleware
-app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Serve static frontend files from 'public' directory
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Configure Multer File Storage for CAD, Excel, and PDF Ingestion
+// Multer Disk Storage Configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
 });
-const upload = multer({ storage });
 
-// In-Memory EHV Project State (Can be connected to PostgreSQL or MongoDB)
-let ehvProjectState = {
-  projectId: 'EHV-2026-001',
-  projectName: '132kV / 400kV Feeder Cable Circuit - Line 1',
-  clusterName: 'Northern Cluster',
-  routeLengthMeters: 1250,
-  isBaselineLocked: false,
-  cableLaidMeters: 680,
-  civilTrenchingMeters: 920,
-  nodes: [
-    { id: 'SS-A', chainage: 0, label: 'Substation A', type: 'Substation Terminal' },
-    { id: 'EHV-JB-01', chainage: 350, label: 'Joint Bay 1', type: 'Joint Bay' },
-    { id: 'EHV-JB-02', chainage: 800, label: 'Joint Bay 2', type: 'Joint Bay' },
-    { id: 'SS-B', chainage: 1250, label: 'Substation B', type: 'Substation Terminal' }
-  ]
-};
-
-// ==================== API ENDPOINTS ====================
-
-// 1. Get Circuit Topology Data
-app.get('/api/ehv/topology', (req, res) => {
-  res.json(ehvProjectState);
-});
-
-// 2. Admin Document Upload Ingestion API
-app.post('/api/ehv/upload', upload.fields([
-  { name: 'cadFile', maxCount: 1 },
-  { name: 'excelFile', maxCount: 1 },
-  { name: 'pdfFile', maxCount: 1 }
-]), (req, res) => {
-  try {
-    res.json({
-      status: 'Success',
-      message: 'EHV Drawings, BOQ schedules, and technical specs processed.',
-      projectData: ehvProjectState
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to process EHV files.' });
+const upload = multer({
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    const allowedExts = ['.dxf', '.xlsx', '.xls', '.pdf'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedExts.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Allowed extensions: .dxf, .xlsx, .xls, .pdf'));
+    }
   }
 });
 
-// 3. Admin Baseline Lock API
-app.post('/api/ehv/lock-baseline', (req, res) => {
-  ehvProjectState.isBaselineLocked = true;
-  res.json({ 
-    status: 'Success', 
-    message: 'EHV Circuit Baseline locked successfully. Active field tracking enabled.' 
+// Serve static assets from 'public' directory
+app.use(express.static(path.join(__dirname, 'public')));
+
+// In-Memory baseline state for EHV Cable Tracking Portal
+let projectState = {
+  totalRouteLength: "1250",
+  clusterName: "Northern Cluster",
+  voltageRating: "132kV / 400kV Single Core",
+  jointBays: 2,
+  systemPhase: "PHASE 2: ACTIVE TRACKING",
+  cadFile: null,
+  excelFile: null,
+  pdfFile: null,
+  boqItems: []
+};
+
+// GET current parameters
+app.get('/api/parameters', (req, res) => {
+  res.json({ success: true, data: projectState });
+});
+
+// POST save route parameters
+app.post('/api/save-parameters', (req, res) => {
+  const { totalRouteLength, clusterName, voltageRating } = req.body;
+  if (totalRouteLength !== undefined) projectState.totalRouteLength = totalRouteLength;
+  if (clusterName !== undefined) projectState.clusterName = clusterName;
+  if (voltageRating !== undefined) projectState.voltageRating = voltageRating;
+
+  res.json({
+    success: true,
+    message: "Route & Circuit parameters updated successfully.",
+    data: projectState
   });
 });
 
-// 4. Update Route Parameters (Admin Only)
-app.post('/api/ehv/update-route', (req, res) => {
-  const { routeMeters, clusterName } = req.body;
-  if (routeMeters) ehvProjectState.routeLengthMeters = parseInt(routeMeters);
-  if (clusterName) ehvProjectState.clusterName = clusterName;
-  res.json({ status: 'Success', projectData: ehvProjectState });
+// POST Upload CAD (.DXF)
+app.post('/api/upload-cad', upload.single('cadFile'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No CAD file uploaded." });
+    }
+
+    const content = fs.readFileSync(req.file.path, 'utf8');
+    let estimatedLength = 1250;
+    let detectedJointBays = 2;
+
+    const polylineMatches = (content.match(/LWPOLYLINE|POLYLINE/g) || []).length;
+    if (polylineMatches > 0) {
+      estimatedLength = polylineMatches * 250;
+      detectedJointBays = Math.max(1, Math.floor(estimatedLength / 600));
+    }
+
+    projectState.cadFile = req.file.originalname;
+    projectState.totalRouteLength = String(estimatedLength);
+    projectState.jointBays = detectedJointBays;
+
+    res.json({
+      success: true,
+      message: "[ADMIN ACTION] CAD Route Drawing uploaded and parsed successfully.",
+      file: req.file.originalname,
+      routeLength: projectState.totalRouteLength,
+      jointBays: projectState.jointBays
+    });
+  } catch (err) {
+    console.error("CAD Error:", err);
+    res.status(500).json({ success: false, message: "Error parsing CAD file: " + err.message });
+  }
 });
 
-// Wildcard Route: Direct all traffic to index.html
+// POST Upload Excel BOQ (.XLSX)
+app.post('/api/upload-excel', upload.single('excelFile'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No Excel BOQ file uploaded." });
+    }
+
+    const workbook = XLSX.readFile(req.file.path);
+    const sheetName = workbook.SheetNames[0];
+    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    projectState.excelFile = req.file.originalname;
+    projectState.boqItems = jsonData;
+
+    res.json({
+      success: true,
+      message: "[ADMIN ACTION] Excel BOQ uploaded & parsed successfully.",
+      file: req.file.originalname,
+      rowCount: jsonData.length
+    });
+  } catch (err) {
+    console.error("Excel Error:", err);
+    res.status(500).json({ success: false, message: "Error parsing Excel file: " + err.message });
+  }
+});
+
+// POST Upload EHV PDF Specs
+app.post('/api/upload-pdf', upload.single('pdfFile'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No PDF file uploaded." });
+    }
+
+    projectState.pdfFile = req.file.originalname;
+
+    res.json({
+      success: true,
+      message: "[ADMIN ACTION] EHV PDF Specification linked successfully.",
+      file: req.file.originalname
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Error uploading PDF: " + err.message });
+  }
+});
+
+// Catch-all route to serve single-page portal
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start Express Server
-app.listen(PORT, () => {
+// Dynamic Port Assignment for Render
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`EHV Cable Tracking server live on port ${PORT}`);
 });

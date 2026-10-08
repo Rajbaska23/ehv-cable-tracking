@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EHV Cable Tracking - Executive Access Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #0b0f19; color: #f3f4f6; font-family: system-ui, -apple-system, sans-serif; }
+        .glass-panel { background: #111827; border: 1px solid #1f2937; border-radius: 8px; }
+        .accent-yellow { color: #f59e0b; }
+        .accent-bg-yellow { background-color: #f59e0b; }
+        .accent-green { color: #10b981; }
+        .accent-bg-green { background-color: #10b981; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Top Navigation -->
+    <header class="bg-gray-900 border-b border-gray-800 px-6 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+            <div class="bg-amber-500 text-black p-2 rounded font-bold text-xl">
+                <i class="fa-solid fa-bolt"></i>
+            </div>
+            <div>
+                <div class="flex items-center space-x-2">
+                    <h1 class="text-lg font-bold text-white tracking-wide">EHV Cable Tracking</h1>
+                    <span class="bg-amber-900/60 text-amber-400 text-xs px-2 py-0.5 rounded font-semibold border border-amber-700/50">132kV / 400kV Circuit</span>
+                </div>
+                <p class="text-xs text-gray-400">Northern Cluster Circuit Line 1 • Project ID: <span class="text-amber-400">EHV-2026-001</span></p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <div class="bg-gray-800 text-xs px-3 py-1.5 rounded border border-gray-700 flex items-center space-x-2">
+                <i class="fa-solid fa-user-shield text-amber-400"></i>
+                <span class="text-gray-300 font-semibold">System Admin</span>
+                <span class="bg-amber-500/20 text-amber-300 text-[10px] px-1.5 py-0.5 rounded uppercase">Admin Privileges</span>
+            </div>
+            <button class="bg-amber-500 hover:bg-amber-600 text-black font-semibold text-xs px-3 py-2 rounded flex items-center space-x-1 transition">
+                <i class="fa-solid fa-file-invoice"></i>
+                <span>Executive Report</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex flex-1 overflow-hidden">
+        
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-900 border-r border-gray-800 p-4 space-y-6">
+            <div>
+                <p class="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">EHV Modules</p>
+                <nav class="space-y-1">
+                    <a href="#" class="flex items-center justify-between bg-amber-500/10 text-amber-400 px-3 py-2.5 rounded border border-amber-500/30 text-xs font-semibold">
+                        <span class="flex items-center space-x-2">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <span>Admin Ingestion & Setup</span>
+                        </span>
+                        <span class="bg-amber-500/20 text-[10px] px-1.5 py-0.5 rounded">ADMIN</span>
+                    </a>
+                    <a href="#" class="flex items-center justify-between text-gray-400 hover:bg-gray-800 px-3 py-2.5 rounded text-xs">
+                        <span class="flex items-center space-x-2">
+                            <i class="fa-solid fa-diagram-project"></i>
+                            <span>Master SLD Overview</span>
+                        </span>
+                        <i class="fa-solid fa-angle-right text-[10px]"></i>
+                    </a>
+                    <a href="#" class="flex items-center justify-between text-gray-400 hover:bg-gray-800 px-3 py-2.5 rounded text-xs">
+                        <span class="flex items-center space-x-2">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                            <span>Field Entry Portal</span>
+                        </span>
+                        <i class="fa-solid fa-angle-right text-[10px]"></i>
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Status Widget -->
+            <div class="glass-panel p-3 text-xs space-y-2 mt-auto">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400 uppercase text-[10px] font-bold">System Phase</span>
+                    <span id="phaseDisplay" class="text-emerald-400 font-bold text-[10px]">PHASE 2: ACTIVE TRACKING</span>
+                </div>
+                <div class="flex justify-between text-gray-300">
+                    <span>EHV Route:</span>
+                    <span id="routeDisplay" class="font-bold text-white">1,250 m</span>
+                </div>
+                <div class="flex justify-between text-gray-300">
+                    <span>Joint Bays:</span>
+                    <span id="baysDisplay" class="font-bold text-white">2 Bays (EHV-JB)</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto p-6 space-y-6">
+            
+            <div class="glass-panel p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-gray-800 pb-4">
+                    <div>
+                        <h2 class="text-base font-bold text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-sliders text-amber-400"></i>
+                            <span>EHV Admin Control & Ingestion</span>
+                        </h2>
+                        <p class="text-xs text-gray-400">Upload CAD alignment drawings, BOQ spreadsheets, and specs to establish circuit baseline.</p>
+                    </div>
+                    <button id="lockBaselineBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded flex items-center space-x-2 transition">
+                        <i class="fa-solid fa-lock"></i>
+                        <span>Lock Baseline</span>
+                    </button>
+                </div>
+
+                <!-- Upload Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    
+                    <!-- CAD DXF Upload -->
+                    <div class="border-2 border-dashed border-gray-700 hover:border-amber-500/50 bg-gray-900/50 rounded-lg p-6 text-center space-y-3 cursor-pointer transition relative">
+                        <input type="file" id="cadFileInput" accept=".dxf" class="absolute inset-0 opacity-0 cursor-pointer">
+                        <div class="w-12 h-12 bg-amber-500/10 text-amber-400 rounded-full flex items-center justify-center mx-auto text-lg">
+                            <i class="fa-solid fa-map-location-dot"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xs font-bold text-white">Upload CAD Route (.DXF)</h3>
+                            <p class="text-[11px] text-gray-400 mt-1">Parses EHV polyline lengths & joint nodes</p>
+                        </div>
+                        <span id="cadStatus" class="inline-block text-[10px] text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded">Click to Select .DXF File</span>
+                    </div>
+
+                    <!-- Excel BOQ Upload -->
+                    <div class="border-2 border-dashed border-gray-700 hover:border-emerald-500/50 bg-gray-900/50 rounded-lg p-6 text-center space-y-3 cursor-pointer transition relative">
+                        <input type="file" id="excelFileInput" accept=".xlsx,.xls" class="absolute inset-0 opacity-0 cursor-pointer">
+                        <div class="w-12 h-12 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto text-lg">
+                            <i class="fa-solid fa-file-excel"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xs font-bold text-white">Upload Excel BOQ (.XLSX)</h3>
+                            <p class="text-[11px] text-gray-400 mt-1">Extracts cable drums & joint schedules</p>
+                        </div>
+                        <span id="excelStatus" class="inline-block text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded">Click to Select .XLSX File</span>
+                    </div>
+
+                    <!-- PDF Specs Upload -->
+                    <div class="border-2 border-dashed border-gray-700 hover:border-rose-500/50 bg-gray-900/50 rounded-lg p-6 text-center space-y-3 cursor-pointer transition relative">
+                        <input type="file" id="pdfFileInput" accept=".pdf" class="absolute inset-0 opacity-0 cursor-pointer">
+                        <div class="w-12 h-12 bg-rose-500/10 text-rose-400 rounded-full flex items-center justify-center mx-auto text-lg">
+                            <i class="fa-solid fa-file-pdf"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xs font-bold text-white">Upload EHV PDF Specs</h3>
+                            <p class="text-[11px] text-gray-400 mt-1">Links joint bay installation manuals</p>
+                        </div>
+                        <span id="pdfStatus" class="inline-block text-[10px] text-rose-400 font-semibold bg-rose-500/10 px-2 py-0.5 rounded">Click to Select .PDF File</span>
+                    </div>
+
+                </div>
+
+                <!-- Parameter Inputs -->
+                <div class="pt-4 border-t border-gray-800">
+                    <h3 class="text-xs font-bold uppercase text-gray-400 tracking-wider mb-3">Edit Route & Circuit Parameters</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-[11px] text-gray-400 mb-1">Total Route Length (Meters)</label>
+                            <input type="number" id="inputRouteLength" value="1250" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-gray-400 mb-1">Cluster Name</label>
+                            <input type="text" id="inputClusterName" value="Northern Cluster" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-gray-400 mb-1">Voltage Rating</label>
+                            <input type="text" id="inputVoltageRating" value="132kV / 400kV Single Core" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
+                        </div>
+                    </div>
+                    <div class="mt-4 flex justify-end">
+                        <button id="saveParamsBtn" class="bg-amber-500 hover:bg-amber-600 text-black font-semibold text-xs px-4 py-2 rounded transition flex items-center space-x-1">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            <span>Save Circuit Parameters</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Client Script -->
+    <script>
+        // Load initial parameters from server
+        async function loadParameters() {
+            try {
+                const res = await fetch('/api/parameters');
+                const result = await res.json();
+                if(result.success && result.data) {
+                    document.getElementById('inputRouteLength').value = result.data.totalRouteLength || "1250";
+                    document.getElementById('inputClusterName').value = result.data.clusterName || "Northern Cluster";
+                    document.getElementById('inputVoltageRating').value = result.data.voltageRating || "132kV / 400kV Single Core";
+                    document.getElementById('routeDisplay').textContent = (result.data.totalRouteLength || "1250") + " m";
+                    document.getElementById('baysDisplay').textContent = (result.data.jointBays || "2") + " Bays (EHV-JB)";
+                }
+            } catch(e) {
+                console.log("Using default parameters");
+            }
+        }
+
+        // CAD File Upload Handler
+        document.getElementById('cadFileInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('cadFile', file);
+
+            document.getElementById('cadStatus').textContent = "Uploading CAD...";
+
+            try {
+                const res = await fetch('/api/upload-cad', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('cadStatus').textContent = "Uploaded: " + file.name;
+                    document.getElementById('inputRouteLength').value = data.routeLength;
+                    document.getElementById('routeDisplay').textContent = data.routeLength + " m";
+                    document.getElementById('baysDisplay').textContent = data.jointBays + " Bays (EHV-JB)";
+                } else {
+                    alert("CAD Upload Failed: " + data.message);
+                    document.getElementById('cadStatus').textContent = "Upload Failed";
+                }
+            } catch (err) {
+                alert("Network error while uploading CAD file.");
+                document.getElementById('cadStatus').textContent = "Error";
+            }
+        });
+
+        // Excel BOQ Upload Handler
+        document.getElementById('excelFileInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('excelFile', file);
+
+            document.getElementById('excelStatus').textContent = "Uploading Excel...";
+
+            try {
+                const res = await fetch('/api/upload-excel', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('excelStatus').textContent = "Uploaded: " + file.name + " (" + data.rowCount + " rows)";
+                } else {
+                    alert("Excel Upload Failed: " + data.message);
+                    document.getElementById('excelStatus').textContent = "Upload Failed";
+                }
+            } catch (err) {
+                alert("Network error while uploading Excel BOQ.");
+                document.getElementById('excelStatus').textContent = "Error";
+            }
+        });
+
+        // PDF Specs Upload Handler
+        document.getElementById('pdfFileInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('pdfFile', file);
+
+            document.getElementById('pdfStatus').textContent = "Uploading PDF...";
+
+            try {
+                const res = await fetch('/api/upload-pdf', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('pdfStatus').textContent = "Uploaded: " + file.name;
+                } else {
+                    alert("PDF Upload Failed: " + data.message);
+                    document.getElementById('pdfStatus').textContent = "Upload Failed";
+                }
+            } catch (err) {
+                alert("Network error while uploading PDF file.");
+                document.getElementById('pdfStatus').textContent = "Error";
+            }
+        });
+
+        // Save Parameters Handler
+        document.getElementById('saveParamsBtn').addEventListener('click', async () => {
+            const totalRouteLength = document.getElementById('inputRouteLength').value;
+            const clusterName = document.getElementById('inputClusterName').value;
+            const voltageRating = document.getElementById('inputVoltageRating').value;
+
+            try {
+                const res = await fetch('/api/save-parameters', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ totalRouteLength, clusterName, voltageRating })
+                });
+                const data = await res.json();
+                if(data.success) {
+                    alert(data.message);
+                    document.getElementById('routeDisplay').textContent = totalRouteLength + " m";
+                }
+            } catch(e) {
+                alert("Error saving circuit parameters.");
+            }
+        });
+
+        // Initialize portal on load
+        loadParameters();
+    </script>
+</body>
+</html>
