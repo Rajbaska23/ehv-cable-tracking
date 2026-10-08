@@ -529,7 +529,7 @@
             alert("Admin action executed: " + type);
         }
 
-        // Create New Project Form Submit Handler (With File Attachments)
+        // Bulletproof Create New Project Form Submit Handler with robust error catching
         document.getElementById('newProjectForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -539,26 +539,35 @@
             formData.append('pmName', document.getElementById('newPrjPM').value);
 
             const mInput = document.getElementById('milestoneFileInput');
-            if (mInput.files[0]) formData.append('milestoneFile', mInput.files[0]);
+            if (mInput && mInput.files[0]) formData.append('milestoneFile', mInput.files[0]);
 
             const cInput = document.getElementById('cadFileInput');
-            if (cInput.files[0]) formData.append('cadFile', cInput.files[0]);
+            if (cInput && cInput.files[0]) formData.append('cadFile', cInput.files[0]);
 
             const bInput = document.getElementById('boqFileInput');
-            if (bInput.files[0]) formData.append('boqFile', bInput.files[0]);
+            if (bInput && bInput.files[0]) formData.append('boqFile', bInput.files[0]);
 
             const matInput = document.getElementById('matFileInput');
-            if (matInput.files[0]) formData.append('materialFile', matInput.files[0]);
+            if (matInput && matInput.files[0]) formData.append('materialFile', matInput.files[0]);
 
             const pInput = document.getElementById('pdfFileInput');
-            if (pInput.files[0]) formData.append('schematicFile', pInput.files[0]);
+            if (pInput && pInput.files[0]) formData.append('schematicFile', pInput.files[0]);
 
             try {
                 const res = await fetch('/api/admin/create-project', {
                     method: 'POST',
                     body: formData
                 });
-                const data = await res.json();
+
+                const textResponse = await res.text();
+                let data;
+                try {
+                    data = JSON.parse(textResponse);
+                } catch (jsonErr) {
+                    console.error("Non-JSON Server Response:", textResponse);
+                    alert("Server Error: Received invalid response format from server.");
+                    return;
+                }
 
                 if (data.success) {
                     alert(data.message);
@@ -574,7 +583,8 @@
                     alert("Project creation failed: " + data.message);
                 }
             } catch (err) {
-                alert("Network error while creating project.");
+                console.error("Network or Fetch Error:", err);
+                alert("Network error while creating project: " + err.message);
             }
         });
 
@@ -588,7 +598,7 @@
             const res = await fetch('/api/admin/create-user', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.parse(JSON.stringify({ username, password, role }))
+                body: JSON.stringify({ username, password, role })
             });
             const data = await res.json();
             alert(data.message);

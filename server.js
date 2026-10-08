@@ -19,21 +19,10 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
 });
 
-// Use upload.any() to accept any file field names without unexpected field errors
 const upload = multer({
   storage: storage,
   limits: { fileSize: 25 * 1024 * 1024 }
 });
-
-const handleUpload = (multerMiddleware) => (req, res, next) => {
-  multerMiddleware(req, res, (err) => {
-    if (err) {
-      console.error("Multer Error:", err.message);
-      return res.status(400).json({ success: false, message: err.message });
-    }
-    next();
-  });
-};
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -123,51 +112,63 @@ app.post('/api/admin/create-user', (req, res) => {
   res.json({ success: true, message: `User ${username} created successfully!` });
 });
 
-// Flexible project creation handling any uploaded files via upload.any()
-app.post('/api/admin/create-project', handleUpload(upload.any()), (req, res) => {
-  const { name, code, pmName } = req.body;
+// Bulletproof project creation endpoint with upload.any() and safe error catching
+app.post('/api/admin/create-project', (req, res) => {
+  upload.any()(req, res, (err) => {
+    if (err) {
+      console.error("Multer upload error:", err.message);
+      return res.status(400).json({ success: false, message: "File upload error: " + err.message });
+    }
 
-  if (!name || !code) {
-    return res.status(400).json({ success: false, message: 'Project Name and Code are required.' });
-  }
+    try {
+      const { name, code, pmName } = req.body;
 
-  const uploadedFiles = req.files || [];
-  const cadUpload = uploadedFiles.find(f => f.fieldname === 'cadFile');
-  const boqUpload = uploadedFiles.find(f => f.fieldname === 'boqFile');
+      if (!name || !code) {
+        return res.status(400).json({ success: false, message: 'Project Name and Code are required.' });
+      }
 
-  const newPrj = {
-    id: 'prj-' + (projects.length + 1),
-    code: code,
-    name: name,
-    pmName: pmName || 'Assigned PM',
-    startDate: new Date().toISOString().split('T')[0],
-    targetFinish: '2027-12-31',
-    plannedPct: 15,
-    actualPct: 10,
-    variancePct: -5,
-    targetEndDate: '2027-12-31',
-    forecastEndDate: '2028-01-15',
-    cadFile: cadUpload ? cadUpload.originalname : null,
-    boqFile: boqUpload ? boqUpload.originalname : null,
-    boq: [
-      { item: 'Trenching & Excavation', qty: 2500, completed: 300, unit: 'm' },
-      { item: '132kV Cable Pulling', qty: 2500, completed: 200, unit: 'm' },
-      { item: 'Joint Bay Assembly', qty: 2, completed: 0, unit: 'bays' }
-    ],
-    materials: [
-      { item: '132kV Cable Drum Set', status: 'Delivered On-Site', qty: '2500 m' }
-    ],
-    hseObs: [],
-    ncrList: []
-  };
+      const uploadedFiles = req.files || [];
+      const cadUpload = uploadedFiles.find(f => f.fieldname === 'cadFile');
+      const boqUpload = uploadedFiles.find(f => f.fieldname === 'boqFile');
 
-  projects.push(newPrj);
+      const newPrj = {
+        id: 'prj-' + (projects.length + 1),
+        code: code,
+        name: name,
+        pmName: pmName || 'Assigned PM',
+        startDate: new Date().toISOString().split('T')[0],
+        targetFinish: '2027-12-31',
+        plannedPct: 15,
+        actualPct: 10,
+        variancePct: -5,
+        targetEndDate: '2027-12-31',
+        forecastEndDate: '2028-01-15',
+        cadFile: cadUpload ? cadUpload.originalname : null,
+        boqFile: boqUpload ? boqUpload.originalname : null,
+        boq: [
+          { item: 'Trenching & Excavation', qty: 2500, completed: 300, unit: 'm' },
+          { item: '132kV Cable Pulling', qty: 2500, completed: 200, unit: 'm' },
+          { item: 'Joint Bay Assembly', qty: 2, completed: 0, unit: 'bays' }
+        ],
+        materials: [
+          { item: '132kV Cable Drum Set', status: 'Delivered On-Site', qty: '2500 m' }
+        ],
+        hseObs: [],
+        ncrList: []
+      };
 
-  res.json({
-    success: true,
-    message: `[PROJECT CREATED] ${name} (${code}) created successfully with ${uploadedFiles.length} files attached!`,
-    project: newPrj,
-    projects: projects
+      projects.push(newPrj);
+
+      return res.json({
+        success: true,
+        message: `[PROJECT CREATED] ${name} (${code}) created successfully with ${uploadedFiles.length} files attached!`,
+        project: newPrj,
+        projects: projects
+      });
+    } catch (serverErr) {
+      console.error("Server project creation error:", serverErr.message);
+      return res.status(500).json({ success: false, message: "Internal server error: " + serverErr.message });
+    }
   });
 });
 
