@@ -1,7 +1,7 @@
 {
   "name": "ehv-cable-tracking",
-  "version": "1.0.0",
-  "description": "EHV Cable Tracking - Executive Access Portal",
+  "version": "2.0.0",
+  "description": "EHV Cable Tracking - Multi-Role Workflow Portal",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

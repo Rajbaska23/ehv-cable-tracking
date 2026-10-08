@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EHV Cable Tracking - Executive Access Portal</title>
+    <title>EHV Cable Tracking - Multi-Role Workflow Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -15,33 +15,43 @@
 
     <!-- LOGIN MODAL GATE -->
     <div id="loginModal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
-        <div class="bg-gray-900 border border-gray-800 rounded-lg p-6 max-w-sm w-full space-y-4 shadow-2xl">
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-6 max-w-md w-full space-y-4 shadow-2xl">
             <div class="text-center space-y-1">
                 <div class="bg-amber-500 text-black p-2.5 rounded-lg font-bold text-2xl inline-block mb-2">
                     <i class="fa-solid fa-bolt"></i>
                 </div>
-                <h2 class="text-lg font-bold text-white">EHV Executive Access Portal</h2>
-                <p class="text-xs text-gray-400">Enter administrator credentials to unlock tracking modules.</p>
+                <h2 class="text-lg font-bold text-white">EHV Cable Tracking System</h2>
+                <p class="text-xs text-gray-400">Select Role / Enter Credentials (Pass: 123)</p>
             </div>
 
-            <form id="loginForm" class="space-y-3">
+            <!-- Quick Demo Role Switcher -->
+            <div class="grid grid-cols-3 gap-1.5 text-[10px]">
+                <button type="button" onclick="fillCreds('admin')" class="bg-gray-800 hover:bg-amber-500/20 hover:text-amber-400 p-1.5 rounded border border-gray-700 text-center font-bold">ADMIN</button>
+                <button type="button" onclick="fillCreds('pm')" class="bg-gray-800 hover:bg-amber-500/20 hover:text-amber-400 p-1.5 rounded border border-gray-700 text-center font-bold">PM</button>
+                <button type="button" onclick="fillCreds('civil')" class="bg-gray-800 hover:bg-amber-500/20 hover:text-amber-400 p-1.5 rounded border border-gray-700 text-center font-bold">CIVIL</button>
+                <button type="button" onclick="fillCreds('elec')" class="bg-gray-800 hover:bg-amber-500/20 hover:text-amber-400 p-1.5 rounded border border-gray-700 text-center font-bold">ELECTRICAL</button>
+                <button type="button" onclick="fillCreds('qaqc')" class="bg-gray-800 hover:bg-amber-500/20 hover:text-amber-400 p-1.5 rounded border border-gray-700 text-center font-bold">QA/QC</button>
+                <button type="button" onclick="fillCreds('hse')" class="bg-gray-800 hover:bg-amber-500/20 hover:text-amber-400 p-1.5 rounded border border-gray-700 text-center font-bold">HSE</button>
+            </div>
+
+            <form id="loginForm" class="space-y-3 pt-2">
                 <div>
                     <label class="block text-[11px] text-gray-400 mb-1">Username</label>
                     <input type="text" id="loginUser" required value="admin" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
                 </div>
                 <div>
                     <label class="block text-[11px] text-gray-400 mb-1">Password</label>
-                    <input type="password" id="loginPass" required value="admin123" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
+                    <input type="password" id="loginPass" required value="123" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
                 </div>
                 <div id="loginError" class="text-xs text-rose-500 hidden text-center font-semibold"></div>
                 <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs py-2.5 rounded transition">
-                    Authenticate Session
+                    Log In
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- Top Navigation Header -->
+    <!-- Header Navigation -->
     <header class="bg-gray-900 border-b border-gray-800 px-6 py-3 flex items-center justify-between">
         <div class="flex items-center space-x-4">
             <div class="bg-amber-500 text-black p-2 rounded font-bold text-xl">
@@ -50,241 +60,308 @@
             <div>
                 <div class="flex items-center space-x-2">
                     <h1 class="text-lg font-bold text-white tracking-wide">EHV Cable Tracking</h1>
-                    <span class="bg-amber-900/60 text-amber-400 text-xs px-2 py-0.5 rounded font-semibold border border-amber-700/50">132kV / 400kV Circuit</span>
+                    <span id="roleBadge" class="bg-amber-900/60 text-amber-400 text-xs px-2 py-0.5 rounded font-semibold border border-amber-700/50">ADMIN ROLE</span>
                 </div>
-                <p class="text-xs text-gray-400">Northern Cluster Circuit Line 1 • Project ID: <span class="text-amber-400">EHV-2026-001</span></p>
+                <p class="text-xs text-gray-400">Active User: <span id="userNameDisplay" class="text-amber-400">Administrator</span></p>
             </div>
         </div>
 
         <div class="flex items-center space-x-3">
-            <div class="bg-gray-800 text-xs px-3 py-1.5 rounded border border-gray-700 flex items-center space-x-2">
-                <i class="fa-solid fa-user-shield text-amber-400"></i>
-                <span class="text-gray-300 font-semibold">System Admin</span>
-                <span class="bg-amber-500/20 text-amber-300 text-[10px] px-1.5 py-0.5 rounded uppercase">Admin Privileges</span>
-            </div>
-            <button class="bg-amber-500 hover:bg-amber-600 text-black font-semibold text-xs px-3 py-2 rounded flex items-center space-x-1 transition">
-                <i class="fa-solid fa-file-invoice"></i>
-                <span>Executive Report</span>
-            </button>
-            
-            <!-- LOGOUT BUTTON -->
-            <button id="logoutBtn" onclick="logoutSession()" class="bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 font-semibold text-xs px-3 py-2 rounded flex items-center space-x-1.5 transition">
+            <button onclick="logoutSession()" class="bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 font-semibold text-xs px-3 py-2 rounded flex items-center space-x-1.5 transition">
                 <i class="fa-solid fa-right-from-bracket"></i>
                 <span>Logout</span>
             </button>
         </div>
     </header>
 
-    <!-- Main Workspace -->
-    <div class="flex flex-1 overflow-hidden">
-        
-        <!-- Sidebar Navigation -->
-        <aside class="w-64 bg-gray-900 border-r border-gray-800 p-4 space-y-6 flex flex-col justify-between">
-            <div>
-                <p class="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">EHV Modules</p>
-                <nav class="space-y-1">
-                    <button id="navAdmin" onclick="switchTab('adminSection', this)" class="w-full flex items-center justify-between bg-amber-500/10 text-amber-400 px-3 py-2.5 rounded border border-amber-500/30 text-xs font-semibold nav-btn">
-                        <span class="flex items-center space-x-2">
-                            <i class="fa-solid fa-shield-halved"></i>
-                            <span>Admin Ingestion & Setup</span>
-                        </span>
-                        <span class="bg-amber-500/20 text-[10px] px-1.5 py-0.5 rounded">ADMIN</span>
-                    </button>
-                    <button id="navSLD" onclick="switchTab('sldSection', this)" class="w-full flex items-center justify-between text-gray-400 hover:bg-gray-800 px-3 py-2.5 rounded text-xs nav-btn">
-                        <span class="flex items-center space-x-2">
-                            <i class="fa-solid fa-diagram-project"></i>
-                            <span>Master SLD Overview</span>
-                        </span>
-                        <i class="fa-solid fa-angle-right text-[10px]"></i>
-                    </button>
-                    <button id="navField" onclick="switchTab('fieldSection', this)" class="w-full flex items-center justify-between text-gray-400 hover:bg-gray-800 px-3 py-2.5 rounded text-xs nav-btn">
-                        <span class="flex items-center space-x-2">
-                            <i class="fa-solid fa-pen-to-square"></i>
-                            <span>Field Entry Portal</span>
-                        </span>
-                        <i class="fa-solid fa-angle-right text-[10px]"></i>
-                    </button>
-                </nav>
-            </div>
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto p-6 space-y-6">
 
-            <!-- Bottom Circuit Status Widget -->
-            <div class="glass-panel p-3 text-xs space-y-2">
-                <div class="flex justify-between items-center">
-                    <span class="text-gray-400 uppercase text-[10px] font-bold">System Phase</span>
-                    <span id="phaseDisplay" class="text-emerald-400 font-bold text-[10px]">PHASE 2: ACTIVE TRACKING</span>
-                </div>
-                <div class="flex justify-between text-gray-300">
-                    <span>EHV Route:</span>
-                    <span id="routeDisplay" class="font-bold text-white">3,000 m</span>
-                </div>
-                <div class="flex justify-between text-gray-300">
-                    <span>Joint Bays:</span>
-                    <span id="baysDisplay" class="font-bold text-white">2 Bays (EHV-JB)</span>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Main Workspace Panels -->
-        <main class="flex-1 overflow-y-auto p-6 space-y-6">
-            
-            <!-- SECTION 1: Admin Ingestion & Setup -->
-            <div id="adminSection" class="tab-content glass-panel p-6 space-y-6">
+        <!-- ==================== 1) ADMIN WORKSPACE ==================== -->
+        <div id="adminView" class="role-view space-y-6 hidden">
+            <div class="glass-panel p-6 space-y-6">
                 <div class="flex justify-between items-center border-b border-gray-800 pb-4">
                     <div>
                         <h2 class="text-base font-bold text-white flex items-center space-x-2">
-                            <i class="fa-solid fa-sliders text-amber-400"></i>
-                            <span>EHV Admin Control & Ingestion</span>
+                            <i class="fa-solid fa-user-gear text-amber-400"></i>
+                            <span>Page 1: Admin Panel & Project Setup</span>
                         </h2>
-                        <p class="text-xs text-gray-400">Upload CAD alignment drawings, BOQ spreadsheets, and specs to establish circuit baseline.</p>
-                    </div>
-                    <button id="lockBaselineBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded flex items-center space-x-2 transition">
-                        <i class="fa-solid fa-lock"></i>
-                        <span>Lock Baseline</span>
-                    </button>
-                </div>
-
-                <!-- Upload Cards Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <!-- CAD DXF Upload -->
-                    <div class="border-2 border-dashed border-gray-700 hover:border-amber-500/50 bg-gray-900/50 rounded-lg p-6 text-center space-y-3 cursor-pointer transition relative">
-                        <input type="file" id="cadFileInput" accept=".dxf" class="absolute inset-0 opacity-0 cursor-pointer">
-                        <div class="w-12 h-12 bg-amber-500/10 text-amber-400 rounded-full flex items-center justify-center mx-auto text-lg">
-                            <i class="fa-solid fa-map-location-dot"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-xs font-bold text-white">Upload CAD Route (.DXF)</h3>
-                            <p class="text-[11px] text-gray-400 mt-1">Parses EHV polyline lengths & joint nodes</p>
-                        </div>
-                        <span id="cadStatus" class="inline-block text-[10px] text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded">Click to Select .DXF File</span>
-                    </div>
-
-                    <!-- Excel BOQ Upload -->
-                    <div class="border-2 border-dashed border-gray-700 hover:border-emerald-500/50 bg-gray-900/50 rounded-lg p-6 text-center space-y-3 cursor-pointer transition relative">
-                        <input type="file" id="excelFileInput" accept=".xlsx,.xls" class="absolute inset-0 opacity-0 cursor-pointer">
-                        <div class="w-12 h-12 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto text-lg">
-                            <i class="fa-solid fa-file-excel"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-xs font-bold text-white">Upload Excel BOQ (.XLSX)</h3>
-                            <p class="text-[11px] text-gray-400 mt-1">Extracts cable drums & joint schedules</p>
-                        </div>
-                        <span id="excelStatus" class="inline-block text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded">Click to Select .XLSX File</span>
-                    </div>
-
-                    <!-- PDF Specs Upload -->
-                    <div class="border-2 border-dashed border-gray-700 hover:border-rose-500/50 bg-gray-900/50 rounded-lg p-6 text-center space-y-3 cursor-pointer transition relative">
-                        <input type="file" id="pdfFileInput" accept=".pdf" class="absolute inset-0 opacity-0 cursor-pointer">
-                        <div class="w-12 h-12 bg-rose-500/10 text-rose-400 rounded-full flex items-center justify-center mx-auto text-lg">
-                            <i class="fa-solid fa-file-pdf"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-xs font-bold text-white">Upload EHV PDF Specs</h3>
-                            <p class="text-[11px] text-gray-400 mt-1">Links joint bay installation manuals</p>
-                        </div>
-                        <span id="pdfStatus" class="inline-block text-[10px] text-rose-400 font-semibold bg-rose-500/10 px-2 py-0.5 rounded">Click to Select .PDF File</span>
+                        <p class="text-xs text-gray-400">Select an existing project or configure a new project baseline.</p>
                     </div>
                 </div>
 
-                <!-- Parameter Inputs -->
-                <div class="pt-4 border-t border-gray-800">
-                    <h3 class="text-xs font-bold uppercase text-gray-400 tracking-wider mb-3">Edit Route & Circuit Parameters</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-[11px] text-gray-400 mb-1">Total Route Length (Meters)</label>
-                            <input type="number" id="inputRouteLength" value="3000" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
-                        </div>
-                        <div>
-                            <label class="block text-[11px] text-gray-400 mb-1">Cluster Name</label>
-                            <input type="text" id="inputClusterName" value="DIP1" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
-                        </div>
-                        <div>
-                            <label class="block text-[11px] text-gray-400 mb-1">Voltage Rating</label>
-                            <input type="text" id="inputVoltageRating" value="132kV - SINGLE CORE 630 SQ MM" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
+                <!-- Project Selection Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-gray-900 border border-gray-800 p-4 rounded space-y-3">
+                        <h3 class="text-xs font-bold text-amber-400 uppercase">Select Existing Project</h3>
+                        <select id="adminProjectSelect" class="w-full bg-gray-800 border border-gray-700 text-xs text-white rounded p-2 focus:outline-none">
+                            <option value="prj-1">Project 1: Northern Cluster Circuit Line 1</option>
+                            <option value="prj-2">Project 2: Southern Substation Interconnect</option>
+                        </select>
+                        <div class="flex space-x-2 pt-2">
+                            <button onclick="adminAction('updateBoq')" class="bg-gray-800 hover:bg-gray-700 text-xs text-gray-200 px-3 py-1.5 rounded border border-gray-600">Update BOQ</button>
+                            <button onclick="adminAction('modifyUsers')" class="bg-gray-800 hover:bg-gray-700 text-xs text-gray-200 px-3 py-1.5 rounded border border-gray-600">Add / Modify Users</button>
                         </div>
                     </div>
-                    <div class="mt-4 flex justify-end">
-                        <button id="saveParamsBtn" class="bg-amber-500 hover:bg-amber-600 text-black font-semibold text-xs px-4 py-2 rounded transition flex items-center space-x-1">
-                            <i class="fa-solid fa-floppy-disk"></i>
-                            <span>Save Circuit Parameters</span>
-                        </button>
+
+                    <div class="bg-gray-900 border border-gray-800 p-4 rounded space-y-3">
+                        <h3 class="text-xs font-bold text-emerald-400 uppercase">Create New Project</h3>
+                        <form id="newProjectForm" class="space-y-2 text-xs">
+                            <input type="text" id="newPrjName" placeholder="Enter Project Name" required class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white">
+                            <input type="text" id="newPrjCode" placeholder="Enter Project Code" required class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white">
+                            <input type="text" id="newPrjPM" placeholder="Enter PM Name" required class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white">
+                            
+                            <div class="grid grid-cols-2 gap-2 pt-1 text-[11px] text-gray-400">
+                                <label class="border border-gray-700 p-1.5 rounded bg-gray-800 cursor-pointer text-center">
+                                    Baseline Milestone (Excel)
+                                    <input type="file" class="hidden">
+                                </label>
+                                <label class="border border-gray-700 p-1.5 rounded bg-gray-800 cursor-pointer text-center">
+                                    CAD File (.dxf)
+                                    <input type="file" class="hidden">
+                                </label>
+                                <label class="border border-gray-700 p-1.5 rounded bg-gray-800 cursor-pointer text-center">
+                                    BOQ - Scope (Excel)
+                                    <input type="file" class="hidden">
+                                </label>
+                                <label class="border border-gray-700 p-1.5 rounded bg-gray-800 cursor-pointer text-center">
+                                    Material List/Tracker (Excel)
+                                    <input type="file" class="hidden">
+                                </label>
+                                <label class="border border-gray-700 p-1.5 rounded bg-gray-800 cursor-pointer text-center col-span-2">
+                                    Schematic Diagram (PDF)
+                                    <input type="file" class="hidden">
+                                </label>
+                            </div>
+
+                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold p-2 rounded transition">
+                                Create New Project
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Admin User Creation Form -->
+                <div class="border-t border-gray-800 pt-4">
+                    <h3 class="text-xs font-bold text-amber-400 uppercase mb-3">Create New Users & Assign Roles</h3>
+                    <form id="createUserForm" class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+                        <input type="text" id="createUsername" placeholder="User ID" required class="bg-gray-900 border border-gray-700 rounded p-2 text-white">
+                        <input type="password" id="createPassword" placeholder="Password" required class="bg-gray-900 border border-gray-700 rounded p-2 text-white">
+                        <select id="createRole" class="bg-gray-900 border border-gray-700 rounded p-2 text-white">
+                            <option value="PM">PM (Project Manager)</option>
+                            <option value="CIVIL">Civil Lead</option>
+                            <option value="ELEC">Electrical Lead</option>
+                            <option value="QAQC">QC Lead</option>
+                            <option value="HSE">HSE Lead</option>
+                            <option value="PROC">Procurement Lead</option>
+                        </select>
+                        <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-black font-bold rounded p-2 transition">Assign User & Password</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ==================== 2) PM WORKSPACE ==================== -->
+        <div id="pmView" class="role-view space-y-6 hidden">
+            <!-- Project Selection Bar for PM -->
+            <div class="glass-panel p-4 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <span class="text-xs font-bold text-gray-400 uppercase">PM Projects Handled:</span>
+                    <button onclick="loadPmProject('prj-1')" class="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs px-3 py-1 rounded font-bold">Prj 1</button>
+                    <button onclick="loadPmProject('prj-2')" class="bg-gray-800 text-gray-400 border border-gray-700 text-xs px-3 py-1 rounded font-bold hover:text-white">Prj 2</button>
+                </div>
+                <h3 id="pmPrjTitle" class="text-sm font-bold text-white">Northern Cluster Circuit Line 1</h3>
+            </div>
+
+            <!-- Page 2 Header Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="glass-panel p-4 space-y-1">
+                    <p class="text-[10px] uppercase font-bold text-gray-400">Project Schedule Baseline</p>
+                    <div class="flex justify-between text-xs text-gray-200">
+                        <span>Start Date: <strong id="pmStartDate" class="text-white">2026-01-15</strong></span>
+                        <span>Target Finish: <strong id="pmTargetFinish" class="text-white">2026-11-30</strong></span>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-4 space-y-1">
+                    <p class="text-[10px] uppercase font-bold text-gray-400">Progress Overview</p>
+                    <div class="flex justify-between text-xs text-gray-200">
+                        <span>Progress %: <strong id="pmProgPct" class="text-emerald-400">58%</strong></span>
+                        <span>Variance: <strong id="pmVariance" class="text-rose-400">-7%</strong></span>
                     </div>
                 </div>
             </div>
 
-            <!-- SECTION 2: Master SLD Overview -->
-            <div id="sldSection" class="tab-content glass-panel p-6 space-y-6 hidden">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h2 class="text-base font-bold text-white flex items-center space-x-2">
-                            <i class="fa-solid fa-diagram-project text-amber-400"></i>
-                            <span>Master Single Line Diagram (SLD)</span>
-                        </h2>
-                        <p class="text-xs text-gray-400">Live schematic visualization of extracted CAD polyline vertices and joint bays.</p>
+            <!-- Page 3 Sub-Tabs Navigation -->
+            <div class="glass-panel p-4 space-y-4">
+                <div class="flex space-x-2 border-b border-gray-800 pb-3 text-xs">
+                    <button onclick="switchPmSubTab('pmProgTab', this)" class="bg-amber-500/20 text-amber-400 border border-amber-500/40 px-4 py-2 rounded font-bold pm-sub-btn">Progress Tab</button>
+                    <button onclick="switchPmSubTab('pmProcTab', this)" class="bg-gray-800 text-gray-400 px-4 py-2 rounded font-bold hover:bg-gray-700 pm-sub-btn">Procurement Tab</button>
+                    <button onclick="switchPmSubTab('pmReportsTab', this)" class="bg-gray-800 text-gray-400 px-4 py-2 rounded font-bold hover:bg-gray-700 pm-sub-btn">Reports</button>
+                </div>
+
+                <!-- Sub-Tab 1: Progress Tab (Page 3 Top) -->
+                <div id="pmProgTab" class="pm-sub-content space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-900 p-4 rounded text-xs border border-gray-800">
+                        <div>
+                            <p class="text-gray-400">Overall Planned %: <strong class="text-white">65%</strong></p>
+                            <p class="text-gray-400 mt-1">Target End Date: <strong class="text-amber-400">2026-11-30</strong></p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400">Actual %: <strong class="text-emerald-400">58%</strong></p>
+                            <p class="text-gray-400 mt-1">Actual Forecast End Date: <strong class="text-rose-400">2026-12-15</strong></p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400">Variance %: <strong class="text-rose-400">-7%</strong></p>
+                        </div>
                     </div>
-                    <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs px-3 py-1 rounded font-semibold">
-                        Baseline Active
-                    </span>
+
+                    <!-- Schematic Circuit Highlighted -->
+                    <div class="bg-gray-900 border border-gray-800 p-6 rounded text-center space-y-2">
+                        <p class="text-xs font-bold uppercase text-amber-400 tracking-wider">Circuit Schematic Progress Highlighted</p>
+                        <div class="flex justify-center items-center space-x-4 text-xs font-mono pt-4">
+                            <span class="bg-amber-500/20 border border-amber-500/50 px-3 py-1.5 rounded text-amber-300">SS Substation</span>
+                            <span class="text-emerald-400 font-bold">====== 1800m ======></span>
+                            <span class="bg-emerald-500/20 border border-emerald-500/50 px-3 py-1.5 rounded text-emerald-300">JB1 Joint Bay</span>
+                            <span class="text-gray-600 font-bold">------ 1200m ------</span>
+                            <span class="bg-gray-800 border border-gray-700 px-3 py-1.5 rounded text-gray-400">SS/2 Substation</span>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Interactive SVG Canvas -->
-                <div class="bg-gray-900 border border-gray-800 rounded-lg p-6 overflow-x-auto">
-                    <svg id="sldSvg" width="100%" height="220" viewBox="0 0 900 220" class="w-full min-w-[700px]">
-                        <!-- Dynamic SVG elements rendered via JS -->
-                    </svg>
-                </div>
-
-                <!-- Extracted Nodes Table -->
-                <div class="border-t border-gray-800 pt-4">
-                    <h3 class="text-xs font-bold uppercase text-gray-400 tracking-wider mb-3">Extracted CAD Polyline Nodes</h3>
+                <!-- Sub-Tab 2: Procurement Tab (Page 3 Middle) -->
+                <div id="pmProcTab" class="pm-sub-content space-y-4 hidden">
+                    <h4 class="text-xs font-bold text-amber-400 uppercase">Detailed Material Status (From Material Tracker File)</h4>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs text-gray-300">
-                            <thead class="bg-gray-800/60 text-gray-400 uppercase text-[10px]">
+                        <table class="w-full text-xs text-left text-gray-300">
+                            <thead class="bg-gray-800 uppercase text-[10px]">
                                 <tr>
-                                    <th class="p-2.5">Node ID</th>
-                                    <th class="p-2.5">Type</th>
-                                    <th class="p-2.5">Coordinate (X, Y)</th>
-                                    <th class="p-2.5">Chainage (Distance)</th>
+                                    <th class="p-2">Material Item</th>
+                                    <th class="p-2">Quantity</th>
+                                    <th class="p-2">Status</th>
                                 </tr>
                             </thead>
-                            <tbody id="nodeTableBody">
-                                <!-- Dynamic rows rendered via JS -->
+                            <tbody id="pmMaterialTable" class="divide-y divide-gray-800">
+                                <tr>
+                                    <td class="p-2">132kV Single Core Cable Drum #1</td>
+                                    <td class="p-2">1000 m</td>
+                                    <td class="p-2 text-emerald-400 font-semibold">Delivered On-Site</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-            </div>
 
-            <!-- SECTION 3: Field Entry Portal -->
-            <div id="fieldSection" class="tab-content glass-panel p-6 space-y-6 hidden">
-                <h2 class="text-base font-bold text-white flex items-center space-x-2">
-                    <i class="fa-solid fa-pen-to-square text-amber-400"></i>
-                    <span>Field Data Entry</span>
-                </h2>
-                <p class="text-xs text-gray-400">Record site jointing progress, ground trenching, and cable pulling status.</p>
-                <div class="bg-gray-900 border border-gray-800 p-8 rounded text-center text-gray-400 text-sm space-y-2">
-                    <i class="fa-solid fa-clipboard-check text-4xl text-emerald-400 mb-2"></i>
-                    <p class="text-white font-semibold">Field Entry Module Active</p>
-                    <p class="text-xs text-gray-400">Joint bay inspection logs and cable drum alignment entries ready for sync.</p>
+                <!-- Sub-Tab 3: Reports (Page 3 Middle) -->
+                <div id="pmReportsTab" class="pm-sub-content space-y-4 hidden">
+                    <h4 class="text-xs font-bold text-amber-400 uppercase">Generate Reports</h4>
+                    <div class="flex space-x-3">
+                        <button onclick="alert('Generating Internal Progress & BOQ Variance Report...')" class="bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs px-4 py-2 rounded">
+                            <i class="fa-solid fa-file-pdf mr-1"></i> Generate Report for Internal
+                        </button>
+                        <button onclick="alert('Generating Executive Client Milestone Summary...')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded">
+                            <i class="fa-solid fa-file-contract mr-1"></i> Generate Report for Client
+                        </button>
+                    </div>
                 </div>
             </div>
+        </div>
 
-        </main>
-    </div>
 
-    <!-- Client Scripts -->
+        <!-- ==================== 3) CIVIL, ELECTRICAL, QAQC FIELD WORKSPACE ==================== -->
+        <div id="siteFieldView" class="role-view space-y-6 hidden">
+            <div class="glass-panel p-6 space-y-4">
+                <h2 class="text-base font-bold text-white flex items-center space-x-2 border-b border-gray-800 pb-3">
+                    <i class="fa-solid fa-pen-to-square text-amber-400"></i>
+                    <span>Civil / Electrical / QA QC Site Progress Update</span>
+                </h2>
+
+                <form id="progressUpdateForm" class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+                    <div>
+                        <label class="block text-gray-400 mb-1">Select Circuit / Project</label>
+                        <select id="fieldCircuit" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white">
+                            <option value="prj-1">Project 1: Northern Cluster Circuit Line 1</option>
+                            <option value="prj-2">Project 2: Southern Substation Interconnect</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 mb-1">Select Activity</label>
+                        <select id="fieldActivity" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white">
+                            <option value="Trenching & Excavation">Civil: Trenching & Excavation</option>
+                            <option value="132kV Cable Pulling">Electrical: 132kV Cable Pulling</option>
+                            <option value="Joint Bay Assembly">QAQC: Joint Bay Inspection</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 mb-1">Quantity Completed</label>
+                        <input type="number" id="fieldQty" placeholder="e.g. 250" required class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white">
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded p-2">Update Progress</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+
+        <!-- ==================== 4) HSE WORKSPACE ==================== -->
+        <div id="hseView" class="role-view space-y-6 hidden">
+            <div class="glass-panel p-6 space-y-4">
+                <h2 class="text-base font-bold text-white flex items-center space-x-2 border-b border-gray-800 pb-3">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-400"></i>
+                    <span>HSE Logging & Safety Observations</span>
+                </h2>
+
+                <form id="hseForm" class="space-y-3 text-xs">
+                    <div>
+                        <label class="block text-gray-400 mb-1">HSE Observation / Safety Hazard</label>
+                        <textarea id="hseDesc" rows="2" placeholder="Describe safety observation or hazard on site..." required class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white"></textarea>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <label class="text-gray-300 font-semibold flex items-center space-x-2">
+                            <input type="checkbox" id="hseIsNcr" class="rounded bg-gray-800 border-gray-700">
+                            <span>Raise Official HSE NCR</span>
+                        </label>
+                        <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-black font-bold px-4 py-2 rounded">
+                            Upload HSE Observation / NCR
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+
+        <!-- ==================== 5) QC WORKSPACE ==================== -->
+        <div id="qcView" class="role-view space-y-6 hidden">
+            <div class="glass-panel p-6 space-y-4">
+                <h2 class="text-base font-bold text-white flex items-center space-x-2 border-b border-gray-800 pb-3">
+                    <i class="fa-solid fa-clipboard-check text-rose-400"></i>
+                    <span>QA / QC Non-Conformance Log (NCR)</span>
+                </h2>
+
+                <form id="qcForm" class="space-y-3 text-xs">
+                    <div>
+                        <label class="block text-gray-400 mb-1">Quality Non-Conformance Description</label>
+                        <textarea id="qcDesc" rows="2" placeholder="Describe quality defect or non-conformance..." required class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white"></textarea>
+                    </div>
+                    <button type="submit" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded">
+                        Log Quality NCR
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </main>
+
     <script>
-        // Check Authentication Status
-        function checkAuth() {
-            const token = sessionStorage.getItem('ehv_admin_token');
-            if (token) {
-                document.getElementById('loginModal').classList.add('hidden');
-                loadParameters();
-            } else {
-                document.getElementById('loginModal').classList.remove('hidden');
-            }
+        let currentUser = null;
+
+        function fillCreds(role) {
+            document.getElementById('loginUser').value = role;
+            document.getElementById('loginPass').value = '123';
         }
 
-        // Login Handler
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('loginUser').value;
@@ -300,225 +377,138 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    sessionStorage.setItem('ehv_admin_token', data.token);
+                    currentUser = data.user;
+                    sessionStorage.setItem('ehv_user', JSON.stringify(currentUser));
                     document.getElementById('loginModal').classList.add('hidden');
-                    errDiv.classList.add('hidden');
-                    loadParameters();
+                    setupRoleView(currentUser);
                 } else {
                     errDiv.textContent = data.message;
                     errDiv.classList.remove('hidden');
                 }
             } catch (err) {
-                errDiv.textContent = "Authentication server error.";
+                errDiv.textContent = "Server connection error.";
                 errDiv.classList.remove('hidden');
             }
         });
 
-        // Logout Handler
         function logoutSession() {
-            sessionStorage.removeItem('ehv_admin_token');
-            checkAuth();
+            sessionStorage.removeItem('ehv_user');
+            document.getElementById('loginModal').classList.remove('hidden');
         }
 
-        // Tab Switcher
-        function switchTab(sectionId, element) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.getElementById(sectionId).classList.remove('hidden');
+        function setupRoleView(user) {
+            document.querySelectorAll('.role-view').forEach(v => v.classList.add('hidden'));
+            document.getElementById('userNameDisplay').textContent = user.name;
+            document.getElementById('roleBadge').textContent = user.role + " ROLE";
 
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.className = "w-full flex items-center justify-between text-gray-400 hover:bg-gray-800 px-3 py-2.5 rounded text-xs nav-btn";
+            if (user.role === 'ADMIN') {
+                document.getElementById('adminView').classList.remove('hidden');
+            } else if (user.role === 'PM') {
+                document.getElementById('pmView').classList.remove('hidden');
+            } else if (['CIVIL', 'ELEC'].includes(user.role)) {
+                document.getElementById('siteFieldView').classList.remove('hidden');
+            } else if (user.role === 'HSE') {
+                document.getElementById('hseView').classList.remove('hidden');
+            } else if (user.role === 'QAQC') {
+                document.getElementById('qcView').classList.remove('hidden');
+                document.getElementById('siteFieldView').classList.remove('hidden');
+            } else {
+                document.getElementById('pmView').classList.remove('hidden');
+            }
+        }
+
+        function switchPmSubTab(tabId, btn) {
+            document.querySelectorAll('.pm-sub-content').forEach(c => c.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.pm-sub-btn').forEach(b => {
+                b.className = "bg-gray-800 text-gray-400 px-4 py-2 rounded font-bold hover:bg-gray-700 pm-sub-btn";
             });
-
-            element.className = "w-full flex items-center justify-between bg-amber-500/10 text-amber-400 px-3 py-2.5 rounded border border-amber-500/30 text-xs font-semibold nav-btn";
+            btn.className = "bg-amber-500/20 text-amber-400 border border-amber-500/40 px-4 py-2 rounded font-bold pm-sub-btn";
         }
 
-        // Render SLD SVG Canvas
-        function renderSLD(nodes, totalLength) {
-            const svg = document.getElementById('sldSvg');
-            const tableBody = document.getElementById('nodeTableBody');
-            if (!svg || !tableBody) return;
+        function adminAction(type) {
+            alert("Admin action executed: " + type);
+        }
 
-            svg.innerHTML = '';
-            tableBody.innerHTML = '';
+        document.getElementById('createUserForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('createUsername').value;
+            const password = document.getElementById('createPassword').value;
+            const role = document.getElementById('createRole').value;
 
-            const length = parseFloat(totalLength) || 3000;
-            const nodeCount = nodes && nodes.length > 0 ? nodes.length : 3;
-
-            // Base Cable Line
-            const mainLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            mainLine.setAttribute("x1", "80");
-            mainLine.setAttribute("y1", "100");
-            mainLine.setAttribute("x2", "820");
-            mainLine.setAttribute("y2", "100");
-            mainLine.setAttribute("stroke", "#f59e0b");
-            mainLine.setAttribute("stroke-width", "6");
-            mainLine.setAttribute("stroke-linecap", "round");
-            svg.appendChild(mainLine);
-
-            const startX = 80;
-            const endX = 820;
-            const spacing = (endX - startX) / (nodeCount - 1 || 1);
-
-            nodes.forEach((node, idx) => {
-                const cx = startX + (idx * spacing);
-                const cy = 100;
-                const chainage = Math.round((idx / (nodeCount - 1 || 1)) * length);
-                const isJointBay = idx > 0 && idx < nodeCount - 1;
-                const nodeType = idx === 0 ? "Substation A" : (idx === nodeCount - 1 ? "Substation B" : `Joint Bay ${idx}`);
-
-                const circleOuter = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                circleOuter.setAttribute("cx", cx);
-                circleOuter.setAttribute("cy", cy);
-                circleOuter.setAttribute("r", isJointBay ? "12" : "16");
-                circleOuter.setAttribute("fill", "#111827");
-                circleOuter.setAttribute("stroke", isJointBay ? "#10b981" : "#f59e0b");
-                circleOuter.setAttribute("stroke-width", "3");
-                svg.appendChild(circleOuter);
-
-                const circleInner = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                circleInner.setAttribute("cx", cx);
-                circleInner.setAttribute("cy", cy);
-                circleInner.setAttribute("r", "5");
-                circleInner.setAttribute("fill", isJointBay ? "#10b981" : "#f59e0b");
-                svg.appendChild(circleInner);
-
-                const textLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                textLabel.setAttribute("x", cx);
-                textLabel.setAttribute("y", cy - 25);
-                textLabel.setAttribute("fill", "#ffffff");
-                textLabel.setAttribute("font-size", "11");
-                textLabel.setAttribute("font-weight", "bold");
-                textLabel.setAttribute("text-anchor", "middle");
-                textLabel.textContent = nodeType;
-                svg.appendChild(textLabel);
-
-                const textDist = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                textDist.setAttribute("x", cx);
-                textDist.setAttribute("y", cy + 30);
-                textDist.setAttribute("fill", "#9ca3af");
-                textDist.setAttribute("font-size", "10");
-                textDist.setAttribute("text-anchor", "middle");
-                textDist.textContent = `${chainage} m`;
-                svg.appendChild(textDist);
-
-                const row = document.createElement('tr');
-                row.className = "border-b border-gray-800 hover:bg-gray-800/40";
-                row.innerHTML = `
-                    <td class="p-2.5 font-semibold text-amber-400">NODE-${String(idx + 1).padStart(2, '0')}</td>
-                    <td class="p-2.5">${nodeType}</td>
-                    <td class="p-2.5 font-mono text-gray-400">X: ${(node.x || 0).toFixed(1)}, Y: ${(node.y || 0).toFixed(1)}</td>
-                    <td class="p-2.5 text-emerald-400 font-semibold">${chainage} m</td>
-                `;
-                tableBody.appendChild(row);
+            const res = await fetch('/api/admin/create-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, role })
             });
+            const data = await res.json();
+            alert(data.message);
+        });
+
+        document.getElementById('newProjectForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('newPrjName').value;
+            const code = document.getElementById('newPrjCode').value;
+            const pmName = document.getElementById('newPrjPM').value;
+
+            const res = await fetch('/api/admin/create-project', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, code, pmName })
+            });
+            const data = await res.json();
+            alert(data.message);
+        });
+
+        document.getElementById('progressUpdateForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const projectId = document.getElementById('fieldCircuit').value;
+            const activity = document.getElementById('fieldActivity').value;
+            const quantity = document.getElementById('fieldQty').value;
+
+            const res = await fetch('/api/progress/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ projectId, activity, quantity })
+            });
+            const data = await res.json();
+            alert(data.message);
+        });
+
+        document.getElementById('hseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const desc = document.getElementById('hseDesc').value;
+            const isNcr = document.getElementById('hseIsNcr').checked;
+
+            const res = await fetch('/api/hse/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ projectId: 'prj-1', desc, type: isNcr ? 'NCR' : 'OBS' })
+            });
+            const data = await res.json();
+            alert(data.message);
+        });
+
+        document.getElementById('qcForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const desc = document.getElementById('qcDesc').value;
+
+            const res = await fetch('/api/qc/ncr', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ projectId: 'prj-1', desc })
+            });
+            const data = await res.json();
+            alert(data.message);
+        });
+
+        const savedUser = sessionStorage.getItem('ehv_user');
+        if (savedUser) {
+            currentUser = JSON.parse(savedUser);
+            document.getElementById('loginModal').classList.add('hidden');
+            setupRoleView(currentUser);
         }
-
-        // Load Parameters from Server
-        async function loadParameters() {
-            try {
-                const res = await fetch('/api/parameters');
-                const result = await res.json();
-                if (result.success && result.data) {
-                    document.getElementById('inputRouteLength').value = result.data.totalRouteLength || "3000";
-                    document.getElementById('inputClusterName').value = result.data.clusterName || "DIP1";
-                    document.getElementById('inputVoltageRating').value = result.data.voltageRating || "132kV - SINGLE CORE 630 SQ MM";
-                    document.getElementById('routeDisplay').textContent = (result.data.totalRouteLength || "3000") + " m";
-                    document.getElementById('baysDisplay').textContent = (result.data.jointBays || "2") + " Bays (EHV-JB)";
-                    
-                    renderSLD(result.data.nodes || [], result.data.totalRouteLength || "3000");
-                }
-            } catch (e) {
-                console.error("Error loading project state:", e);
-            }
-        }
-
-        // Lock Baseline Handler
-        document.getElementById('lockBaselineBtn').addEventListener('click', () => {
-            alert('Baseline Locked! Navigating to Master SLD Overview.');
-            switchTab('sldSection', document.getElementById('navSLD'));
-        });
-
-        // CAD File Upload Handler
-        document.getElementById('cadFileInput').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const formData = new FormData();
-            formData.append('cadFile', file);
-            document.getElementById('cadStatus').textContent = "Uploading CAD...";
-
-            try {
-                const res = await fetch('/api/upload-cad', { method: 'POST', body: formData });
-                const data = await res.json();
-
-                if (data.success) {
-                    alert(data.message);
-                    document.getElementById('cadStatus').textContent = "Uploaded: " + file.name;
-                    document.getElementById('inputRouteLength').value = data.routeLength;
-                    document.getElementById('routeDisplay').textContent = data.routeLength + " m";
-                    document.getElementById('baysDisplay').textContent = data.jointBays + " Bays (EHV-JB)";
-                    renderSLD(data.nodes || [], data.routeLength);
-                } else {
-                    alert("CAD Upload Failed: " + data.message);
-                    document.getElementById('cadStatus').textContent = "Upload Failed";
-                }
-            } catch (err) {
-                alert("Network error during CAD upload.");
-                document.getElementById('cadStatus').textContent = "Error";
-            }
-        });
-
-        // Excel File Upload Handler
-        document.getElementById('excelFileInput').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const formData = new FormData();
-            formData.append('excelFile', file);
-            document.getElementById('excelStatus').textContent = "Uploading Excel...";
-
-            try {
-                const res = await fetch('/api/upload-excel', { method: 'POST', body: formData });
-                const data = await res.json();
-
-                if (data.success) {
-                    alert(data.message);
-                    document.getElementById('excelStatus').textContent = "Uploaded: " + file.name + " (" + data.rowCount + " rows)";
-                } else {
-                    alert("Excel Upload Failed: " + data.message);
-                    document.getElementById('excelStatus').textContent = "Upload Failed";
-                }
-            } catch (err) {
-                alert("Network error during Excel BOQ upload.");
-                document.getElementById('excelStatus').textContent = "Error";
-            }
-        });
-
-        // Save Parameters Handler
-        document.getElementById('saveParamsBtn').addEventListener('click', async () => {
-            const totalRouteLength = document.getElementById('inputRouteLength').value;
-            const clusterName = document.getElementById('inputClusterName').value;
-            const voltageRating = document.getElementById('inputVoltageRating').value;
-
-            try {
-                const res = await fetch('/api/save-parameters', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ totalRouteLength, clusterName, voltageRating })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(data.message);
-                    document.getElementById('routeDisplay').textContent = totalRouteLength + " m";
-                    loadParameters();
-                }
-            } catch (e) {
-                alert("Error saving parameters.");
-            }
-        });
-
-        // Run Auth Check on Page Load
-        checkAuth();
     </script>
 </body>
 </html>
