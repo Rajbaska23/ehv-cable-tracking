@@ -98,8 +98,9 @@
                             <option value="prj-1">EHV-2026-001: Northern Cluster Circuit Line 1</option>
                         </select>
                         <div class="flex space-x-2 pt-2">
-                            <button onclick="adminAction('Update BOQ')" class="bg-gray-800 hover:bg-gray-700 text-xs text-gray-200 px-3 py-1.5 rounded border border-gray-600">Update BOQ</button>
-                            <button onclick="adminAction('Modify Users')" class="bg-gray-800 hover:bg-gray-700 text-xs text-gray-200 px-3 py-1.5 rounded border border-gray-600">Add / Modify Users</button>
+                            <button onclick="adminResetProgress()" class="bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/40 text-xs px-3 py-1.5 rounded font-bold">
+                                <i class="fa-solid fa-rotate-left mr-1"></i> Reset / Delete Progress
+                            </button>
                         </div>
                     </div>
 
@@ -217,22 +218,42 @@
                         </div>
                     </div>
 
-                    <!-- Schematic Circuit Highlighted -->
+                    <!-- Schematic Circuit Highlighted with Dynamic Lengths -->
                     <div class="bg-gray-900 border border-gray-800 p-6 rounded text-center space-y-2">
-                        <p class="text-xs font-bold uppercase text-amber-400 tracking-wider">Circuit Schematic Progress Highlighted</p>
-                        <div class="flex justify-center items-center space-x-4 text-xs font-mono pt-4">
-                            <span class="bg-amber-500/20 border border-amber-500/50 px-3 py-1.5 rounded text-amber-300">SS Substation</span>
+                        <p class="text-xs font-bold uppercase text-amber-400 tracking-wider">Circuit Schematic (SLD) Progress Highlighted</p>
+                        <div class="flex justify-center items-center space-x-3 text-xs font-mono pt-4 overflow-x-auto">
+                            <span class="bg-amber-500/20 border border-amber-500/50 px-3 py-1.5 rounded text-amber-300">Start Substation</span>
                             <span id="schematicLine1" class="text-emerald-400 font-bold">====== 1800m ======></span>
                             <span class="bg-amber-500/20 border border-amber-500/50 px-3 py-1.5 rounded text-emerald-300">JB1 Joint Bay</span>
-                            <span id="schematicLine2" class="text-gray-600 font-bold">------ 1200m ------</span>
-                            <span class="bg-gray-800 border border-gray-700 px-3 py-1.5 rounded text-gray-400">SS/2 Substation</span>
+                            <span id="schematicLine2" class="text-gray-400 font-bold">------ 1200m ------</span>
+                            <span class="bg-gray-800 border border-gray-700 px-3 py-1.5 rounded text-gray-300">End Substation</span>
+                        </div>
+                    </div>
+
+                    <!-- BOQ Quantities Table -->
+                    <div class="bg-gray-900 border border-gray-800 p-4 rounded space-y-3">
+                        <h4 class="text-xs font-bold text-amber-400 uppercase">Bill of Quantities (BOQ & Scope Quantities)</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs text-left text-gray-300">
+                                <thead class="bg-gray-800 uppercase text-[10px]">
+                                    <tr>
+                                        <th class="p-2">Activity / Scope Item</th>
+                                        <th class="p-2">Total Quantity</th>
+                                        <th class="p-2">Completed</th>
+                                        <th class="p-2">Unit</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pmBoqTable" class="divide-y divide-gray-800">
+                                    <!-- Dynamic BOQ rows -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
 
                 <!-- Sub-Tab 2: Procurement Tab -->
                 <div id="pmProcTab" class="pm-sub-content space-y-4 hidden">
-                    <h4 class="text-xs font-bold text-amber-400 uppercase">Detailed Material Status (From Material Tracker File)</h4>
+                    <h4 class="text-xs font-bold text-amber-400 uppercase">Detailed Material Status (Parsed from Uploaded Material Tracker)</h4>
                     <div class="overflow-x-auto">
                         <table class="w-full text-xs text-left text-gray-300">
                             <thead class="bg-gray-800 uppercase text-[10px]">
@@ -243,11 +264,7 @@
                                 </tr>
                             </thead>
                             <tbody id="pmMaterialTable" class="divide-y divide-gray-800">
-                                <tr>
-                                    <td class="p-2">132kV Single Core Cable Drum #1</td>
-                                    <td class="p-2">1000 m</td>
-                                    <td class="p-2 text-emerald-400 font-semibold">Delivered On-Site</td>
-                                </tr>
+                                <!-- Dynamic materials -->
                             </tbody>
                         </table>
                     </div>
@@ -257,10 +274,10 @@
                 <div id="pmReportsTab" class="pm-sub-content space-y-4 hidden">
                     <h4 class="text-xs font-bold text-amber-400 uppercase">Generate Reports</h4>
                     <div class="flex space-x-3">
-                        <button onclick="alert('Generating Internal Progress & BOQ Variance Report...')" class="bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs px-4 py-2 rounded">
+                        <button onclick="generateReport('internal')" class="bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs px-4 py-2 rounded">
                             <i class="fa-solid fa-file-pdf mr-1"></i> Generate Report for Internal
                         </button>
-                        <button onclick="alert('Generating Executive Client Milestone Summary...')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded">
+                        <button onclick="generateReport('client')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded">
                             <i class="fa-solid fa-file-contract mr-1"></i> Generate Report for Client
                         </button>
                     </div>
@@ -356,6 +373,7 @@
     <!-- Client Scripts -->
     <script>
         let currentUser = null;
+        let currentProjectId = 'prj-1';
 
         function fillCreds(role) {
             document.getElementById('loginUser').value = role;
@@ -479,6 +497,7 @@
         }
 
         async function loadPmProject(prjId) {
+            currentProjectId = prjId;
             try {
                 const res = await fetch(`/api/projects/${prjId}`);
                 const data = await res.json();
@@ -495,6 +514,25 @@
                     document.getElementById('pmVarText').textContent = `${prj.variancePct || 0}%`;
                     document.getElementById('pmTargetEnd').textContent = prj.targetEndDate || '2026-11-30';
                     document.getElementById('pmForecastEnd').textContent = prj.forecastEndDate || '2026-12-15';
+
+                    // Update SLD graphic segments dynamically
+                    const seg1 = prj.segment1Len || 1500;
+                    const seg2 = prj.segment2Len || 1000;
+                    document.getElementById('schematicLine1').textContent = `====== ${seg1}m ======>`;
+                    document.getElementById('schematicLine2').textContent = `------ ${seg2}m ------`;
+
+                    // Update BOQ Table dynamically with parsed quantities
+                    const boqBody = document.getElementById('pmBoqTable');
+                    boqBody.innerHTML = '';
+                    if (prj.boq && prj.boq.length > 0) {
+                        prj.boq.forEach(b => {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `<td class="p-2 font-semibold text-white">${b.item}</td><td class="p-2">${b.qty}</td><td class="p-2 text-emerald-400 font-bold">${b.completed || 0}</td><td class="p-2">${b.unit || 'm'}</td>`;
+                            boqBody.appendChild(tr);
+                        });
+                    } else {
+                        boqBody.innerHTML = '<tr><td colspan="4" class="p-2 text-gray-500">No BOQ items parsed yet.</td></tr>';
+                    }
 
                     // Update Materials table
                     const matBody = document.getElementById('pmMaterialTable');
@@ -524,15 +562,46 @@
             btn.className = "bg-amber-500/20 text-amber-400 border border-amber-500/40 px-4 py-2 rounded font-bold pm-sub-btn";
         }
 
+        function generateReport(type) {
+            if (!currentProjectId) {
+                alert("Please select a project first.");
+                return;
+            }
+            window.open(`/api/reports/${currentProjectId}/${type}`, '_blank');
+        }
+
+        async function adminResetProgress() {
+            const select = document.getElementById('adminProjectSelect');
+            const prjId = select ? select.value : currentProjectId;
+            if (!confirm("Are you sure you want to reset/delete all progress and completed quantities for this project?")) return;
+
+            try {
+                const res = await fetch('/api/admin/reset-progress', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ projectId: prjId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    loadAllProjects();
+                } else {
+                    alert("Failed to reset progress: " + data.message);
+                }
+            } catch (e) {
+                alert("Error resetting progress: " + e.message);
+            }
+        }
+
         function adminAction(type) {
             alert("Admin action executed: " + type);
         }
 
-        // Direct FormData Submit Handler with loading indicator
+        // Direct FormData Submit Handler with loading indicator & immediate dashboard refresh
         document.getElementById('newProjectForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('createPrjBtn');
-            btn.textContent = "Creating Project...";
+            btn.textContent = "Parsing Files & Creating Project...";
             btn.disabled = true;
 
             const formData = new FormData();
@@ -582,6 +651,11 @@
                     document.getElementById('labelPdf').textContent = "Schematic Diagram (.pdf)";
                     
                     await loadAllProjects();
+
+                    // Instantly switch PM view to newly created project and load dashboard
+                    if (data.project && data.project.id) {
+                        loadPmProject(data.project.id);
+                    }
                 } else {
                     alert("Project creation failed: " + data.message);
                 }
@@ -635,7 +709,7 @@
             const res = await fetch('/api/hse/add', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ projectId: 'prj-1', desc, type: isNcr ? 'NCR' : 'OBS' })
+                body: JSON.stringify({ projectId: currentProjectId, desc, type: isNcr ? 'NCR' : 'OBS' })
             });
             const data = await res.json();
             alert(data.message);
@@ -649,7 +723,7 @@
             const res = await fetch('/api/qc/ncr', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ projectId: 'prj-1', desc })
+                body: JSON.stringify({ projectId: currentProjectId, desc })
             });
             const data = await res.json();
             alert(data.message);
