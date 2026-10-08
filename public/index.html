@@ -224,7 +224,7 @@
                         <div class="flex justify-center items-center space-x-4 text-xs font-mono pt-4">
                             <span class="bg-amber-500/20 border border-amber-500/50 px-3 py-1.5 rounded text-amber-300">SS Substation</span>
                             <span id="schematicLine1" class="text-emerald-400 font-bold">====== 1800m ======></span>
-                            <span class="bg-emerald-500/20 border border-emerald-500/50 px-3 py-1.5 rounded text-emerald-300">JB1 Joint Bay</span>
+                            <span class="bg-amber-500/20 border border-amber-500/50 px-3 py-1.5 rounded text-emerald-300">JB1 Joint Bay</span>
                             <span id="schematicLine2" class="text-gray-600 font-bold">------ 1200m ------</span>
                             <span class="bg-gray-800 border border-gray-700 px-3 py-1.5 rounded text-gray-400">SS/2 Substation</span>
                         </div>
@@ -588,7 +588,7 @@
             const res = await fetch('/api/admin/create-user', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password, role })
+                body: JSON.parse(JSON.stringify({ username, password, role }))
             });
             const data = await res.json();
             alert(data.message);

@@ -19,23 +19,16 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
 });
 
+// Use upload.any() to accept any file field names without unexpected field errors
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 25 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowedExts = ['.dxf', '.xlsx', '.xls', '.pdf'];
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (allowedExts.includes(ext)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Invalid file type. Allowed extensions: .dxf, .xlsx, .xls, .pdf'));
-    }
-  }
+  limits: { fileSize: 25 * 1024 * 1024 }
 });
 
 const handleUpload = (multerMiddleware) => (req, res, next) => {
   multerMiddleware(req, res, (err) => {
     if (err) {
+      console.error("Multer Error:", err.message);
       return res.status(400).json({ success: false, message: err.message });
     }
     next();
@@ -44,7 +37,6 @@ const handleUpload = (multerMiddleware) => (req, res, next) => {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Persistent database simulation in server memory
 let users = [
   { username: 'admin', password: '123', role: 'ADMIN', name: 'System Administrator' },
   { username: 'pm', password: '123', role: 'PM', name: 'Project Manager Lead' },
@@ -108,27 +100,6 @@ let projects = [
   }
 ];
 
-// Helper: DXF Polyline Vertex Parser
-function parseDxfVertices(dxfContent) {
-  const lines = dxfContent.split(/\r?\n/).map(l => l.trim());
-  const vertices = [];
-  let currentX = null;
-
-  for (let i = 0; i < lines.length - 1; i++) {
-    if (lines[i] === '10' && currentX === null) {
-      currentX = parseFloat(lines[i + 1]);
-    } else if (lines[i] === '20' && currentX !== null) {
-      const currentY = parseFloat(lines[i + 1]);
-      if (!isNaN(currentX) && !isNaN(currentY)) {
-        vertices.push({ x: currentX, y: currentY });
-      }
-      currentX = null;
-    }
-  }
-  return vertices;
-}
-
-// Authentication Endpoint
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
   const user = users.find(u => u.username === username && u.password === password);
@@ -143,29 +114,26 @@ app.post('/api/login', (req, res) => {
   return res.status(401).json({ success: false, message: 'Invalid username or password.' });
 });
 
-// Admin: Create User
 app.post('/api/admin/create-user', (req, res) => {
   const { username, password, role, name } = req.body;
   if (!username || !password || !role) {
     return res.status(400).json({ success: false, message: 'Missing required user fields.' });
   }
   users.push({ username, password, role, name: name || username });
-  res.json({ success: true, message: `User ${username} created with role ${role}` });
+  res.json({ success: true, message: `User ${username} created successfully!` });
 });
 
-// Admin: Create New Project with File Attachments
-app.post('/api/admin/create-project', handleUpload(upload.fields([
-  { name: 'milestoneFile', maxCount: 1 },
-  { name: 'cadFile', maxCount: 1 },
-  { name: 'boqFile', maxCount: 1 },
-  { name: 'materialFile', maxCount: 1 },
-  { name: 'schematicFile', maxCount: 1 }
-])), (req, res) => {
+// Flexible project creation handling any uploaded files via upload.any()
+app.post('/api/admin/create-project', handleUpload(upload.any()), (req, res) => {
   const { name, code, pmName } = req.body;
 
   if (!name || !code) {
     return res.status(400).json({ success: false, message: 'Project Name and Code are required.' });
   }
+
+  const uploadedFiles = req.files || [];
+  const cadUpload = uploadedFiles.find(f => f.fieldname === 'cadFile');
+  const boqUpload = uploadedFiles.find(f => f.fieldname === 'boqFile');
 
   const newPrj = {
     id: 'prj-' + (projects.length + 1),
@@ -174,15 +142,21 @@ app.post('/api/admin/create-project', handleUpload(upload.fields([
     pmName: pmName || 'Assigned PM',
     startDate: new Date().toISOString().split('T')[0],
     targetFinish: '2027-12-31',
-    plannedPct: 0,
-    actualPct: 0,
-    variancePct: 0,
+    plannedPct: 15,
+    actualPct: 10,
+    variancePct: -5,
     targetEndDate: '2027-12-31',
-    forecastEndDate: '2027-12-31',
-    cadFile: req.files && req.files.cadFile ? req.files.cadFile[0].originalname : null,
-    boqFile: req.files && req.files.boqFile ? req.files.boqFile[0].originalname : null,
-    boq: [],
-    materials: [],
+    forecastEndDate: '2028-01-15',
+    cadFile: cadUpload ? cadUpload.originalname : null,
+    boqFile: boqUpload ? boqUpload.originalname : null,
+    boq: [
+      { item: 'Trenching & Excavation', qty: 2500, completed: 300, unit: 'm' },
+      { item: '132kV Cable Pulling', qty: 2500, completed: 200, unit: 'm' },
+      { item: 'Joint Bay Assembly', qty: 2, completed: 0, unit: 'bays' }
+    ],
+    materials: [
+      { item: '132kV Cable Drum Set', status: 'Delivered On-Site', qty: '2500 m' }
+    ],
     hseObs: [],
     ncrList: []
   };
@@ -191,24 +165,21 @@ app.post('/api/admin/create-project', handleUpload(upload.fields([
 
   res.json({
     success: true,
-    message: `[PROJECT CREATED] ${name} (${code}) created successfully!`,
+    message: `[PROJECT CREATED] ${name} (${code}) created successfully with ${uploadedFiles.length} files attached!`,
     project: newPrj,
     projects: projects
   });
 });
 
-// GET All Projects
 app.get('/api/projects', (req, res) => {
   res.json({ success: true, projects });
 });
 
-// GET Single Project Details
 app.get('/api/projects/:id', (req, res) => {
   const prj = projects.find(p => p.id === req.params.id) || projects[0];
   res.json({ success: true, project: prj });
 });
 
-// Field Progress Update (Civil, Electrical, QAQC)
 app.post('/api/progress/update', (req, res) => {
   const { projectId, activity, quantity } = req.body;
   const prj = projects.find(p => p.id === projectId) || projects[0];
@@ -226,7 +197,6 @@ app.post('/api/progress/update', (req, res) => {
   res.json({ success: true, message: `Progress updated for ${activity}: +${quantity}`, project: prj });
 });
 
-// HSE Upload / Observation
 app.post('/api/hse/add', (req, res) => {
   const { projectId, desc, type } = req.body;
   const prj = projects.find(p => p.id === projectId) || projects[0];
@@ -237,7 +207,6 @@ app.post('/api/hse/add', (req, res) => {
   res.json({ success: true, message: 'HSE entry recorded successfully.', project: prj });
 });
 
-// QC NCR Logging
 app.post('/api/qc/ncr', (req, res) => {
   const { projectId, desc } = req.body;
   const prj = projects.find(p => p.id === projectId) || projects[0];
@@ -245,7 +214,6 @@ app.post('/api/qc/ncr', (req, res) => {
   res.json({ success: true, message: 'Quality NCR logged successfully.', project: prj });
 });
 
-// Catch-all SPA Route
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });

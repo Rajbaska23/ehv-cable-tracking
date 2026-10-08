@@ -1,6 +1,6 @@
 {
   "name": "ehv-cable-tracking",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "EHV Cable Tracking - Multi-Role Workflow Portal",
   "main": "server.js",
   "scripts": {
