@@ -28,7 +28,7 @@ const upload = multer({
     if (allowedExts.includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Allowed: .dxf, .xlsx, .xls, .pdf'));
+      cb(new Error('Invalid file type. Allowed extensions: .dxf, .xlsx, .xls, .pdf'));
     }
   }
 });
@@ -44,7 +44,7 @@ const handleUpload = (multerMiddleware) => (req, res, next) => {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Database state simulation
+// Persistent database simulation in server memory
 let users = [
   { username: 'admin', password: '123', role: 'ADMIN', name: 'System Administrator' },
   { username: 'pm', password: '123', role: 'PM', name: 'Project Manager Lead' },
@@ -68,6 +68,8 @@ let projects = [
     variancePct: -7,
     targetEndDate: '2026-11-30',
     forecastEndDate: '2026-12-15',
+    cadFile: 'Route_Alignment_Line1.dxf',
+    boqFile: 'BOQ_Scope_Line1.xlsx',
     boq: [
       { item: 'Trenching & Excavation', qty: 3000, completed: 2100, unit: 'm' },
       { item: '132kV Cable Pulling', qty: 3000, completed: 1800, unit: 'm' },
@@ -97,6 +99,8 @@ let projects = [
     variancePct: 2,
     targetEndDate: '2026-12-20',
     forecastEndDate: '2026-12-18',
+    cadFile: null,
+    boqFile: null,
     boq: [],
     materials: [],
     hseObs: [],
@@ -104,56 +108,96 @@ let projects = [
   }
 ];
 
-// Login endpoint
+// Helper: DXF Polyline Vertex Parser
+function parseDxfVertices(dxfContent) {
+  const lines = dxfContent.split(/\r?\n/).map(l => l.trim());
+  const vertices = [];
+  let currentX = null;
+
+  for (let i = 0; i < lines.length - 1; i++) {
+    if (lines[i] === '10' && currentX === null) {
+      currentX = parseFloat(lines[i + 1]);
+    } else if (lines[i] === '20' && currentX !== null) {
+      const currentY = parseFloat(lines[i + 1]);
+      if (!isNaN(currentX) && !isNaN(currentY)) {
+        vertices.push({ x: currentX, y: currentY });
+      }
+      currentX = null;
+    }
+  }
+  return vertices;
+}
+
+// Authentication Endpoint
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
   const user = users.find(u => u.username === username && u.password === password);
   if (user) {
     return res.json({
       success: true,
-      message: 'Authentication successful',
+      message: 'Authentication successful.',
       token: 'token-' + Date.now(),
       user: { username: user.username, role: user.role, name: user.name }
     });
   }
-  return res.status(401).json({ success: false, message: 'Invalid username or password' });
+  return res.status(401).json({ success: false, message: 'Invalid username or password.' });
 });
 
-// Admin: Create New User
+// Admin: Create User
 app.post('/api/admin/create-user', (req, res) => {
   const { username, password, role, name } = req.body;
   if (!username || !password || !role) {
-    return res.status(400).json({ success: false, message: 'Missing user fields' });
+    return res.status(400).json({ success: false, message: 'Missing required user fields.' });
   }
   users.push({ username, password, role, name: name || username });
   res.json({ success: true, message: `User ${username} created with role ${role}` });
 });
 
-// Admin: Create New Project
-app.post('/api/admin/create-project', (req, res) => {
+// Admin: Create New Project with File Attachments
+app.post('/api/admin/create-project', handleUpload(upload.fields([
+  { name: 'milestoneFile', maxCount: 1 },
+  { name: 'cadFile', maxCount: 1 },
+  { name: 'boqFile', maxCount: 1 },
+  { name: 'materialFile', maxCount: 1 },
+  { name: 'schematicFile', maxCount: 1 }
+])), (req, res) => {
   const { name, code, pmName } = req.body;
+
+  if (!name || !code) {
+    return res.status(400).json({ success: false, message: 'Project Name and Code are required.' });
+  }
+
   const newPrj = {
     id: 'prj-' + (projects.length + 1),
-    code: code || 'EHV-NEW',
-    name: name || 'New EHV Circuit Project',
+    code: code,
+    name: name,
     pmName: pmName || 'Assigned PM',
-    startDate: '2026-10-01',
-    targetFinish: '2027-06-30',
+    startDate: new Date().toISOString().split('T')[0],
+    targetFinish: '2027-12-31',
     plannedPct: 0,
     actualPct: 0,
     variancePct: 0,
-    targetEndDate: '2027-06-30',
-    forecastEndDate: '2027-06-30',
+    targetEndDate: '2027-12-31',
+    forecastEndDate: '2027-12-31',
+    cadFile: req.files && req.files.cadFile ? req.files.cadFile[0].originalname : null,
+    boqFile: req.files && req.files.boqFile ? req.files.boqFile[0].originalname : null,
     boq: [],
     materials: [],
     hseObs: [],
     ncrList: []
   };
+
   projects.push(newPrj);
-  res.json({ success: true, message: 'New project created successfully', project: newPrj });
+
+  res.json({
+    success: true,
+    message: `[PROJECT CREATED] ${name} (${code}) created successfully!`,
+    project: newPrj,
+    projects: projects
+  });
 });
 
-// GET All Projects (or for PM)
+// GET All Projects
 app.get('/api/projects', (req, res) => {
   res.json({ success: true, projects });
 });
@@ -164,7 +208,7 @@ app.get('/api/projects/:id', (req, res) => {
   res.json({ success: true, project: prj });
 });
 
-// Site Progress Update (Civil, Electrical, QAQC)
+// Field Progress Update (Civil, Electrical, QAQC)
 app.post('/api/progress/update', (req, res) => {
   const { projectId, activity, quantity } = req.body;
   const prj = projects.find(p => p.id === projectId) || projects[0];
@@ -176,6 +220,9 @@ app.post('/api/progress/update', (req, res) => {
     prj.boq.push({ item: activity || 'Site Activity', qty: 1000, completed: parseFloat(quantity || 0), unit: 'm' });
   }
   
+  prj.actualPct = Math.min(100, Math.round(prj.actualPct + 5));
+  prj.variancePct = prj.actualPct - prj.plannedPct;
+
   res.json({ success: true, message: `Progress updated for ${activity}: +${quantity}`, project: prj });
 });
 
@@ -187,20 +234,21 @@ app.post('/api/hse/add', (req, res) => {
   if (type === 'NCR') {
     prj.ncrList.push({ id: 'NCR-' + (prj.ncrList.length + 1), desc, status: 'Open', raisedBy: 'HSE' });
   }
-  res.json({ success: true, message: 'HSE Entry recorded successfully', project: prj });
+  res.json({ success: true, message: 'HSE entry recorded successfully.', project: prj });
 });
 
-// QA/QC NCR
+// QC NCR Logging
 app.post('/api/qc/ncr', (req, res) => {
   const { projectId, desc } = req.body;
   const prj = projects.find(p => p.id === projectId) || projects[0];
   prj.ncrList.push({ id: 'NCR-' + (prj.ncrList.length + 1), desc, status: 'Open', raisedBy: 'QAQC' });
-  res.json({ success: true, message: 'QC NCR logged successfully', project: prj });
+  res.json({ success: true, message: 'Quality NCR logged successfully.', project: prj });
 });
 
+// Catch-all SPA Route
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, '0.0.0.0', () => console.log(`EHV Multi-Role Portal live on port ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`EHV Cable Tracking Server running on port ${PORT}`));

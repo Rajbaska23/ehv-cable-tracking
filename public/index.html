@@ -24,7 +24,7 @@
                 <p class="text-xs text-gray-400">Select Role / Enter Credentials (Pass: 123)</p>
             </div>
 
-            <!-- Quick Demo Role Switcher -->
+            <!-- Role Selector Buttons -->
             <div class="grid grid-cols-3 gap-1.5 text-[10px]">
                 <button type="button" onclick="fillCreds('admin')" class="bg-gray-800 hover:bg-amber-500/20 hover:text-amber-400 p-1.5 rounded border border-gray-700 text-center font-bold">ADMIN</button>
                 <button type="button" onclick="fillCreds('pm')" class="bg-gray-800 hover:bg-amber-500/20 hover:text-amber-400 p-1.5 rounded border border-gray-700 text-center font-bold">PM</button>
@@ -74,10 +74,10 @@
         </div>
     </header>
 
-    <!-- Main Content Area -->
+    <!-- Main Workspace -->
     <main class="flex-1 overflow-y-auto p-6 space-y-6">
 
-        <!-- ==================== 1) ADMIN WORKSPACE ==================== -->
+        <!-- ==================== PAGE 1: ADMIN WORKSPACE ==================== -->
         <div id="adminView" class="role-view space-y-6 hidden">
             <div class="glass-panel p-6 space-y-6">
                 <div class="flex justify-between items-center border-b border-gray-800 pb-4">
@@ -90,58 +90,59 @@
                     </div>
                 </div>
 
-                <!-- Project Selection Grid -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Select Existing Project -->
                     <div class="bg-gray-900 border border-gray-800 p-4 rounded space-y-3">
                         <h3 class="text-xs font-bold text-amber-400 uppercase">Select Existing Project</h3>
                         <select id="adminProjectSelect" class="w-full bg-gray-800 border border-gray-700 text-xs text-white rounded p-2 focus:outline-none">
-                            <option value="prj-1">Project 1: Northern Cluster Circuit Line 1</option>
-                            <option value="prj-2">Project 2: Southern Substation Interconnect</option>
+                            <option value="prj-1">EHV-2026-001: Northern Cluster Circuit Line 1</option>
+                            <option value="prj-2">EHV-2026-002: Southern Substation Interconnect</option>
                         </select>
                         <div class="flex space-x-2 pt-2">
-                            <button onclick="adminAction('updateBoq')" class="bg-gray-800 hover:bg-gray-700 text-xs text-gray-200 px-3 py-1.5 rounded border border-gray-600">Update BOQ</button>
-                            <button onclick="adminAction('modifyUsers')" class="bg-gray-800 hover:bg-gray-700 text-xs text-gray-200 px-3 py-1.5 rounded border border-gray-600">Add / Modify Users</button>
+                            <button onclick="adminAction('Update BOQ')" class="bg-gray-800 hover:bg-gray-700 text-xs text-gray-200 px-3 py-1.5 rounded border border-gray-600">Update BOQ</button>
+                            <button onclick="adminAction('Modify Users')" class="bg-gray-800 hover:bg-gray-700 text-xs text-gray-200 px-3 py-1.5 rounded border border-gray-600">Add / Modify Users</button>
                         </div>
                     </div>
 
+                    <!-- Create New Project Form with File Uploads -->
                     <div class="bg-gray-900 border border-gray-800 p-4 rounded space-y-3">
                         <h3 class="text-xs font-bold text-emerald-400 uppercase">Create New Project</h3>
                         <form id="newProjectForm" class="space-y-2 text-xs">
                             <input type="text" id="newPrjName" placeholder="Enter Project Name" required class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white">
-                            <input type="text" id="newPrjCode" placeholder="Enter Project Code" required class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white">
+                            <input type="text" id="newPrjCode" placeholder="Enter Project Code (e.g. EHV-2026-003)" required class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white">
                             <input type="text" id="newPrjPM" placeholder="Enter PM Name" required class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white">
                             
                             <div class="grid grid-cols-2 gap-2 pt-1 text-[11px] text-gray-400">
-                                <label class="border border-gray-700 p-1.5 rounded bg-gray-800 cursor-pointer text-center">
-                                    Baseline Milestone (Excel)
-                                    <input type="file" class="hidden">
+                                <label class="border border-gray-700 p-2 rounded bg-gray-800 cursor-pointer text-center hover:border-amber-500">
+                                    <span id="labelMilestone">Baseline Milestone (.xlsx)</span>
+                                    <input type="file" id="milestoneFileInput" accept=".xlsx,.xls" class="hidden" onchange="updateFileLabel(this, 'labelMilestone')">
                                 </label>
-                                <label class="border border-gray-700 p-1.5 rounded bg-gray-800 cursor-pointer text-center">
-                                    CAD File (.dxf)
-                                    <input type="file" class="hidden">
+                                <label class="border border-gray-700 p-2 rounded bg-gray-800 cursor-pointer text-center hover:border-amber-500">
+                                    <span id="labelCad">CAD File (.dxf)</span>
+                                    <input type="file" id="cadFileInput" accept=".dxf" class="hidden" onchange="updateFileLabel(this, 'labelCad')">
                                 </label>
-                                <label class="border border-gray-700 p-1.5 rounded bg-gray-800 cursor-pointer text-center">
-                                    BOQ - Scope (Excel)
-                                    <input type="file" class="hidden">
+                                <label class="border border-gray-700 p-2 rounded bg-gray-800 cursor-pointer text-center hover:border-amber-500">
+                                    <span id="labelBoq">BOQ - Scope (.xlsx)</span>
+                                    <input type="file" id="boqFileInput" accept=".xlsx,.xls" class="hidden" onchange="updateFileLabel(this, 'labelBoq')">
                                 </label>
-                                <label class="border border-gray-700 p-1.5 rounded bg-gray-800 cursor-pointer text-center">
-                                    Material List/Tracker (Excel)
-                                    <input type="file" class="hidden">
+                                <label class="border border-gray-700 p-2 rounded bg-gray-800 cursor-pointer text-center hover:border-amber-500">
+                                    <span id="labelMat">Material Tracker (.xlsx)</span>
+                                    <input type="file" id="matFileInput" accept=".xlsx,.xls" class="hidden" onchange="updateFileLabel(this, 'labelMat')">
                                 </label>
-                                <label class="border border-gray-700 p-1.5 rounded bg-gray-800 cursor-pointer text-center col-span-2">
-                                    Schematic Diagram (PDF)
-                                    <input type="file" class="hidden">
+                                <label class="border border-gray-700 p-2 rounded bg-gray-800 cursor-pointer text-center hover:border-amber-500 col-span-2">
+                                    <span id="labelPdf">Schematic Diagram (.pdf)</span>
+                                    <input type="file" id="pdfFileInput" accept=".pdf" class="hidden" onchange="updateFileLabel(this, 'labelPdf')">
                                 </label>
                             </div>
 
-                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold p-2 rounded transition">
-                                Create New Project
+                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold p-2.5 rounded transition">
+                                Create New Project & Upload Files
                             </button>
                         </form>
                     </div>
                 </div>
 
-                <!-- Admin User Creation Form -->
+                <!-- Admin Create Users -->
                 <div class="border-t border-gray-800 pt-4">
                     <h3 class="text-xs font-bold text-amber-400 uppercase mb-3">Create New Users & Assign Roles</h3>
                     <form id="createUserForm" class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
@@ -162,19 +163,19 @@
         </div>
 
 
-        <!-- ==================== 2) PM WORKSPACE ==================== -->
+        <!-- ==================== PAGE 2 & 3: PM WORKSPACE ==================== -->
         <div id="pmView" class="role-view space-y-6 hidden">
-            <!-- Project Selection Bar for PM -->
             <div class="glass-panel p-4 flex items-center justify-between">
                 <div class="flex items-center space-x-3">
                     <span class="text-xs font-bold text-gray-400 uppercase">PM Projects Handled:</span>
-                    <button onclick="loadPmProject('prj-1')" class="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs px-3 py-1 rounded font-bold">Prj 1</button>
-                    <button onclick="loadPmProject('prj-2')" class="bg-gray-800 text-gray-400 border border-gray-700 text-xs px-3 py-1 rounded font-bold hover:text-white">Prj 2</button>
+                    <div id="pmProjectButtons" class="flex space-x-2">
+                        <!-- Dynamic PM project buttons -->
+                    </div>
                 </div>
                 <h3 id="pmPrjTitle" class="text-sm font-bold text-white">Northern Cluster Circuit Line 1</h3>
             </div>
 
-            <!-- Page 2 Header Cards -->
+            <!-- Page 2 Metric Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="glass-panel p-4 space-y-1">
                     <p class="text-[10px] uppercase font-bold text-gray-400">Project Schedule Baseline</p>
@@ -201,19 +202,19 @@
                     <button onclick="switchPmSubTab('pmReportsTab', this)" class="bg-gray-800 text-gray-400 px-4 py-2 rounded font-bold hover:bg-gray-700 pm-sub-btn">Reports</button>
                 </div>
 
-                <!-- Sub-Tab 1: Progress Tab (Page 3 Top) -->
+                <!-- Sub-Tab 1: Progress Tab -->
                 <div id="pmProgTab" class="pm-sub-content space-y-4">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-900 p-4 rounded text-xs border border-gray-800">
                         <div>
-                            <p class="text-gray-400">Overall Planned %: <strong class="text-white">65%</strong></p>
-                            <p class="text-gray-400 mt-1">Target End Date: <strong class="text-amber-400">2026-11-30</strong></p>
+                            <p class="text-gray-400">Overall Planned %: <strong id="pmPlanned" class="text-white">65%</strong></p>
+                            <p class="text-gray-400 mt-1">Target End Date: <strong id="pmTargetEnd" class="text-amber-400">2026-11-30</strong></p>
                         </div>
                         <div>
-                            <p class="text-gray-400">Actual %: <strong class="text-emerald-400">58%</strong></p>
-                            <p class="text-gray-400 mt-1">Actual Forecast End Date: <strong class="text-rose-400">2026-12-15</strong></p>
+                            <p class="text-gray-400">Actual %: <strong id="pmActual" class="text-emerald-400">58%</strong></p>
+                            <p class="text-gray-400 mt-1">Forecast End Date: <strong id="pmForecastEnd" class="text-rose-400">2026-12-15</strong></p>
                         </div>
                         <div>
-                            <p class="text-gray-400">Variance %: <strong class="text-rose-400">-7%</strong></p>
+                            <p class="text-gray-400">Variance %: <strong id="pmVarText" class="text-rose-400">-7%</strong></p>
                         </div>
                     </div>
 
@@ -222,15 +223,15 @@
                         <p class="text-xs font-bold uppercase text-amber-400 tracking-wider">Circuit Schematic Progress Highlighted</p>
                         <div class="flex justify-center items-center space-x-4 text-xs font-mono pt-4">
                             <span class="bg-amber-500/20 border border-amber-500/50 px-3 py-1.5 rounded text-amber-300">SS Substation</span>
-                            <span class="text-emerald-400 font-bold">====== 1800m ======></span>
+                            <span id="schematicLine1" class="text-emerald-400 font-bold">====== 1800m ======></span>
                             <span class="bg-emerald-500/20 border border-emerald-500/50 px-3 py-1.5 rounded text-emerald-300">JB1 Joint Bay</span>
-                            <span class="text-gray-600 font-bold">------ 1200m ------</span>
+                            <span id="schematicLine2" class="text-gray-600 font-bold">------ 1200m ------</span>
                             <span class="bg-gray-800 border border-gray-700 px-3 py-1.5 rounded text-gray-400">SS/2 Substation</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Sub-Tab 2: Procurement Tab (Page 3 Middle) -->
+                <!-- Sub-Tab 2: Procurement Tab -->
                 <div id="pmProcTab" class="pm-sub-content space-y-4 hidden">
                     <h4 class="text-xs font-bold text-amber-400 uppercase">Detailed Material Status (From Material Tracker File)</h4>
                     <div class="overflow-x-auto">
@@ -253,7 +254,7 @@
                     </div>
                 </div>
 
-                <!-- Sub-Tab 3: Reports (Page 3 Middle) -->
+                <!-- Sub-Tab 3: Reports -->
                 <div id="pmReportsTab" class="pm-sub-content space-y-4 hidden">
                     <h4 class="text-xs font-bold text-amber-400 uppercase">Generate Reports</h4>
                     <div class="flex space-x-3">
@@ -269,7 +270,7 @@
         </div>
 
 
-        <!-- ==================== 3) CIVIL, ELECTRICAL, QAQC FIELD WORKSPACE ==================== -->
+        <!-- ==================== CIVIL, ELECTRICAL, QAQC FIELD WORKSPACE ==================== -->
         <div id="siteFieldView" class="role-view space-y-6 hidden">
             <div class="glass-panel p-6 space-y-4">
                 <h2 class="text-base font-bold text-white flex items-center space-x-2 border-b border-gray-800 pb-3">
@@ -281,8 +282,7 @@
                     <div>
                         <label class="block text-gray-400 mb-1">Select Circuit / Project</label>
                         <select id="fieldCircuit" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white">
-                            <option value="prj-1">Project 1: Northern Cluster Circuit Line 1</option>
-                            <option value="prj-2">Project 2: Southern Substation Interconnect</option>
+                            <!-- Dynamic project options -->
                         </select>
                     </div>
                     <div>
@@ -305,7 +305,7 @@
         </div>
 
 
-        <!-- ==================== 4) HSE WORKSPACE ==================== -->
+        <!-- ==================== HSE WORKSPACE ==================== -->
         <div id="hseView" class="role-view space-y-6 hidden">
             <div class="glass-panel p-6 space-y-4">
                 <h2 class="text-base font-bold text-white flex items-center space-x-2 border-b border-gray-800 pb-3">
@@ -332,7 +332,7 @@
         </div>
 
 
-        <!-- ==================== 5) QC WORKSPACE ==================== -->
+        <!-- ==================== QC WORKSPACE ==================== -->
         <div id="qcView" class="role-view space-y-6 hidden">
             <div class="glass-panel p-6 space-y-4">
                 <h2 class="text-base font-bold text-white flex items-center space-x-2 border-b border-gray-800 pb-3">
@@ -354,6 +354,7 @@
 
     </main>
 
+    <!-- Client Scripts -->
     <script>
         let currentUser = null;
 
@@ -362,6 +363,13 @@
             document.getElementById('loginPass').value = '123';
         }
 
+        function updateFileLabel(input, labelId) {
+            if (input.files && input.files[0]) {
+                document.getElementById(labelId).textContent = "✔ " + input.files[0].name;
+            }
+        }
+
+        // Login Handler
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('loginUser').value;
@@ -396,10 +404,12 @@
             document.getElementById('loginModal').classList.remove('hidden');
         }
 
-        function setupRoleView(user) {
+        async function setupRoleView(user) {
             document.querySelectorAll('.role-view').forEach(v => v.classList.add('hidden'));
             document.getElementById('userNameDisplay').textContent = user.name;
             document.getElementById('roleBadge').textContent = user.role + " ROLE";
+
+            await loadAllProjects();
 
             if (user.role === 'ADMIN') {
                 document.getElementById('adminView').classList.remove('hidden');
@@ -417,6 +427,94 @@
             }
         }
 
+        async function loadAllProjects() {
+            try {
+                const res = await fetch('/api/projects');
+                const data = await res.json();
+
+                if (data.success && data.projects) {
+                    // Update PM project selection buttons
+                    const pmBtnContainer = document.getElementById('pmProjectButtons');
+                    if (pmBtnContainer) {
+                        pmBtnContainer.innerHTML = '';
+                        data.projects.forEach((prj, idx) => {
+                            const btn = document.createElement('button');
+                            btn.className = "bg-gray-800 text-gray-300 border border-gray-700 text-xs px-3 py-1 rounded font-bold hover:bg-amber-500/20 hover:text-amber-400";
+                            btn.textContent = prj.code;
+                            btn.onclick = () => loadPmProject(prj.id);
+                            pmBtnContainer.appendChild(btn);
+                        });
+                    }
+
+                    // Update Admin project selector dropdown
+                    const adminSelect = document.getElementById('adminProjectSelect');
+                    if (adminSelect) {
+                        adminSelect.innerHTML = '';
+                        data.projects.forEach(prj => {
+                            const opt = document.createElement('option');
+                            opt.value = prj.id;
+                            opt.textContent = `${prj.code}: ${prj.name}`;
+                            adminSelect.appendChild(opt);
+                        });
+                    }
+
+                    // Update Field circuit dropdown
+                    const fieldSelect = document.getElementById('fieldCircuit');
+                    if (fieldSelect) {
+                        fieldSelect.innerHTML = '';
+                        data.projects.forEach(prj => {
+                            const opt = document.createElement('option');
+                            opt.value = prj.id;
+                            opt.textContent = `${prj.code}: ${prj.name}`;
+                            fieldSelect.appendChild(opt);
+                        });
+                    }
+
+                    if (data.projects.length > 0) {
+                        loadPmProject(data.projects[0].id);
+                    }
+                }
+            } catch (e) {
+                console.error("Error loading project list:", e);
+            }
+        }
+
+        async function loadPmProject(prjId) {
+            try {
+                const res = await fetch(`/api/projects/${prjId}`);
+                const data = await res.json();
+
+                if (data.success && data.project) {
+                    const prj = data.project;
+                    document.getElementById('pmPrjTitle').textContent = `${prj.code}: ${prj.name}`;
+                    document.getElementById('pmStartDate').textContent = prj.startDate || '2026-01-15';
+                    document.getElementById('pmTargetFinish').textContent = prj.targetFinish || '2026-11-30';
+                    document.getElementById('pmProgPct').textContent = `${prj.actualPct || 0}%`;
+                    document.getElementById('pmVariance').textContent = `${prj.variancePct || 0}%`;
+                    document.getElementById('pmPlanned').textContent = `${prj.plannedPct || 0}%`;
+                    document.getElementById('pmActual').textContent = `${prj.actualPct || 0}%`;
+                    document.getElementById('pmVarText').textContent = `${prj.variancePct || 0}%`;
+                    document.getElementById('pmTargetEnd').textContent = prj.targetEndDate || '2026-11-30';
+                    document.getElementById('pmForecastEnd').textContent = prj.forecastEndDate || '2026-12-15';
+
+                    // Update Materials table
+                    const matBody = document.getElementById('pmMaterialTable');
+                    matBody.innerHTML = '';
+                    if (prj.materials && prj.materials.length > 0) {
+                        prj.materials.forEach(m => {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `<td class="p-2">${m.item}</td><td class="p-2">${m.qty}</td><td class="p-2 text-emerald-400 font-semibold">${m.status}</td>`;
+                            matBody.appendChild(tr);
+                        });
+                    } else {
+                        matBody.innerHTML = '<tr><td colspan="3" class="p-2 text-gray-500">No material tracking records attached yet.</td></tr>';
+                    }
+                }
+            } catch (e) {
+                console.error("Error loading PM project details:", e);
+            }
+        }
+
         function switchPmSubTab(tabId, btn) {
             document.querySelectorAll('.pm-sub-content').forEach(c => c.classList.add('hidden'));
             document.getElementById(tabId).classList.remove('hidden');
@@ -431,6 +529,56 @@
             alert("Admin action executed: " + type);
         }
 
+        // Create New Project Form Submit Handler (With File Attachments)
+        document.getElementById('newProjectForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData();
+            formData.append('name', document.getElementById('newPrjName').value);
+            formData.append('code', document.getElementById('newPrjCode').value);
+            formData.append('pmName', document.getElementById('newPrjPM').value);
+
+            const mInput = document.getElementById('milestoneFileInput');
+            if (mInput.files[0]) formData.append('milestoneFile', mInput.files[0]);
+
+            const cInput = document.getElementById('cadFileInput');
+            if (cInput.files[0]) formData.append('cadFile', cInput.files[0]);
+
+            const bInput = document.getElementById('boqFileInput');
+            if (bInput.files[0]) formData.append('boqFile', bInput.files[0]);
+
+            const matInput = document.getElementById('matFileInput');
+            if (matInput.files[0]) formData.append('materialFile', matInput.files[0]);
+
+            const pInput = document.getElementById('pdfFileInput');
+            if (pInput.files[0]) formData.append('schematicFile', pInput.files[0]);
+
+            try {
+                const res = await fetch('/api/admin/create-project', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('newProjectForm').reset();
+                    document.getElementById('labelMilestone').textContent = "Baseline Milestone (.xlsx)";
+                    document.getElementById('labelCad').textContent = "CAD File (.dxf)";
+                    document.getElementById('labelBoq').textContent = "BOQ - Scope (.xlsx)";
+                    document.getElementById('labelMat').textContent = "Material Tracker (.xlsx)";
+                    document.getElementById('labelPdf').textContent = "Schematic Diagram (.pdf)";
+                    
+                    loadAllProjects();
+                } else {
+                    alert("Project creation failed: " + data.message);
+                }
+            } catch (err) {
+                alert("Network error while creating project.");
+            }
+        });
+
+        // Create User Form Submit Handler
         document.getElementById('createUserForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('createUsername').value;
@@ -446,21 +594,7 @@
             alert(data.message);
         });
 
-        document.getElementById('newProjectForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('newPrjName').value;
-            const code = document.getElementById('newPrjCode').value;
-            const pmName = document.getElementById('newPrjPM').value;
-
-            const res = await fetch('/api/admin/create-project', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, code, pmName })
-            });
-            const data = await res.json();
-            alert(data.message);
-        });
-
+        // Progress Update Form Submit Handler
         document.getElementById('progressUpdateForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const projectId = document.getElementById('fieldCircuit').value;
@@ -474,8 +608,10 @@
             });
             const data = await res.json();
             alert(data.message);
+            loadAllProjects();
         });
 
+        // HSE Form Submit Handler
         document.getElementById('hseForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const desc = document.getElementById('hseDesc').value;
@@ -490,6 +626,7 @@
             alert(data.message);
         });
 
+        // QC Form Submit Handler
         document.getElementById('qcForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const desc = document.getElementById('qcDesc').value;
@@ -503,6 +640,7 @@
             alert(data.message);
         });
 
+        // Auto-login if session exists
         const savedUser = sessionStorage.getItem('ehv_user');
         if (savedUser) {
             currentUser = JSON.parse(savedUser);
