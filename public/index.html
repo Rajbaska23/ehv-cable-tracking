@@ -96,7 +96,6 @@
                         <h3 class="text-xs font-bold text-amber-400 uppercase">Select Existing Project</h3>
                         <select id="adminProjectSelect" class="w-full bg-gray-800 border border-gray-700 text-xs text-white rounded p-2 focus:outline-none">
                             <option value="prj-1">EHV-2026-001: Northern Cluster Circuit Line 1</option>
-                            <option value="prj-2">EHV-2026-002: Southern Substation Interconnect</option>
                         </select>
                         <div class="flex space-x-2 pt-2">
                             <button onclick="adminAction('Update BOQ')" class="bg-gray-800 hover:bg-gray-700 text-xs text-gray-200 px-3 py-1.5 rounded border border-gray-600">Update BOQ</button>
@@ -135,7 +134,7 @@
                                 </label>
                             </div>
 
-                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold p-2.5 rounded transition">
+                            <button type="submit" id="createPrjBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold p-2.5 rounded transition">
                                 Create New Project & Upload Files
                             </button>
                         </form>
@@ -529,9 +528,12 @@
             alert("Admin action executed: " + type);
         }
 
-        // Bulletproof Create New Project Form Submit Handler with robust error catching
+        // Direct FormData Submit Handler with loading indicator
         document.getElementById('newProjectForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const btn = document.getElementById('createPrjBtn');
+            btn.textContent = "Creating Project...";
+            btn.disabled = true;
 
             const formData = new FormData();
             formData.append('name', document.getElementById('newPrjName').value);
@@ -564,8 +566,9 @@
                 try {
                     data = JSON.parse(textResponse);
                 } catch (jsonErr) {
-                    console.error("Non-JSON Server Response:", textResponse);
-                    alert("Server Error: Received invalid response format from server.");
+                    alert("Server Response Error: " + textResponse);
+                    btn.textContent = "Create New Project & Upload Files";
+                    btn.disabled = false;
                     return;
                 }
 
@@ -578,13 +581,15 @@
                     document.getElementById('labelMat').textContent = "Material Tracker (.xlsx)";
                     document.getElementById('labelPdf').textContent = "Schematic Diagram (.pdf)";
                     
-                    loadAllProjects();
+                    await loadAllProjects();
                 } else {
                     alert("Project creation failed: " + data.message);
                 }
             } catch (err) {
-                console.error("Network or Fetch Error:", err);
-                alert("Network error while creating project: " + err.message);
+                alert("Network error: " + err.message);
+            } finally {
+                btn.textContent = "Create New Project & Upload Files";
+                btn.disabled = false;
             }
         });
 

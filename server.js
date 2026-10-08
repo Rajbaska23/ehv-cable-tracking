@@ -2,7 +2,6 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
-const XLSX = require('xlsx');
 
 const app = express();
 
@@ -67,25 +66,6 @@ let projects = [
     ncrList: [
       { id: 'NCR-01', desc: 'Cable bending radius exceeded at Node 02', status: 'Under Review', raisedBy: 'QAQC' }
     ]
-  },
-  {
-    id: 'prj-2',
-    code: 'EHV-2026-002',
-    name: 'Southern Substation Interconnect',
-    pmName: 'Project Manager Lead',
-    startDate: '2026-03-01',
-    targetFinish: '2026-12-20',
-    plannedPct: 40,
-    actualPct: 42,
-    variancePct: 2,
-    targetEndDate: '2026-12-20',
-    forecastEndDate: '2026-12-18',
-    cadFile: null,
-    boqFile: null,
-    boq: [],
-    materials: [],
-    hseObs: [],
-    ncrList: []
   }
 ];
 
@@ -112,64 +92,62 @@ app.post('/api/admin/create-user', (req, res) => {
   res.json({ success: true, message: `User ${username} created successfully!` });
 });
 
-// Bulletproof project creation endpoint with upload.any() and safe error catching
-app.post('/api/admin/create-project', (req, res) => {
-  upload.any()(req, res, (err) => {
-    if (err) {
-      console.error("Multer upload error:", err.message);
-      return res.status(400).json({ success: false, message: "File upload error: " + err.message });
+// Explicitly handle upload fields or use upload.any() safely
+app.post('/api/admin/create-project', upload.any(), (req, res) => {
+  try {
+    console.log("BODY RECEIVED:", req.body);
+    console.log("FILES RECEIVED:", req.files ? req.files.length : 0);
+
+    const name = req.body.name;
+    const code = req.body.code;
+    const pmName = req.body.pmName || 'Assigned PM';
+
+    if (!name || !code) {
+      return res.status(400).json({ success: false, message: 'Project Name and Code are required.' });
     }
 
-    try {
-      const { name, code, pmName } = req.body;
+    const uploadedFiles = req.files || [];
+    const cadUpload = uploadedFiles.find(f => f.fieldname === 'cadFile');
+    const boqUpload = uploadedFiles.find(f => f.fieldname === 'boqFile');
 
-      if (!name || !code) {
-        return res.status(400).json({ success: false, message: 'Project Name and Code are required.' });
-      }
+    const newPrj = {
+      id: 'prj-' + (projects.length + 1),
+      code: code,
+      name: name,
+      pmName: pmName,
+      startDate: new Date().toISOString().split('T')[0],
+      targetFinish: '2027-12-31',
+      plannedPct: 15,
+      actualPct: 10,
+      variancePct: -5,
+      targetEndDate: '2027-12-31',
+      forecastEndDate: '2028-01-15',
+      cadFile: cadUpload ? cadUpload.originalname : null,
+      boqFile: boqUpload ? boqUpload.originalname : null,
+      boq: [
+        { item: 'Trenching & Excavation', qty: 2500, completed: 300, unit: 'm' },
+        { item: '132kV Cable Pulling', qty: 2500, completed: 200, unit: 'm' },
+        { item: 'Joint Bay Assembly', qty: 2, completed: 0, unit: 'bays' }
+      ],
+      materials: [
+        { item: '132kV Cable Drum Set', status: 'Delivered On-Site', qty: '2500 m' }
+      ],
+      hseObs: [],
+      ncrList: []
+    };
 
-      const uploadedFiles = req.files || [];
-      const cadUpload = uploadedFiles.find(f => f.fieldname === 'cadFile');
-      const boqUpload = uploadedFiles.find(f => f.fieldname === 'boqFile');
+    projects.push(newPrj);
 
-      const newPrj = {
-        id: 'prj-' + (projects.length + 1),
-        code: code,
-        name: name,
-        pmName: pmName || 'Assigned PM',
-        startDate: new Date().toISOString().split('T')[0],
-        targetFinish: '2027-12-31',
-        plannedPct: 15,
-        actualPct: 10,
-        variancePct: -5,
-        targetEndDate: '2027-12-31',
-        forecastEndDate: '2028-01-15',
-        cadFile: cadUpload ? cadUpload.originalname : null,
-        boqFile: boqUpload ? boqUpload.originalname : null,
-        boq: [
-          { item: 'Trenching & Excavation', qty: 2500, completed: 300, unit: 'm' },
-          { item: '132kV Cable Pulling', qty: 2500, completed: 200, unit: 'm' },
-          { item: 'Joint Bay Assembly', qty: 2, completed: 0, unit: 'bays' }
-        ],
-        materials: [
-          { item: '132kV Cable Drum Set', status: 'Delivered On-Site', qty: '2500 m' }
-        ],
-        hseObs: [],
-        ncrList: []
-      };
-
-      projects.push(newPrj);
-
-      return res.json({
-        success: true,
-        message: `[PROJECT CREATED] ${name} (${code}) created successfully with ${uploadedFiles.length} files attached!`,
-        project: newPrj,
-        projects: projects
-      });
-    } catch (serverErr) {
-      console.error("Server project creation error:", serverErr.message);
-      return res.status(500).json({ success: false, message: "Internal server error: " + serverErr.message });
-    }
-  });
+    return res.json({
+      success: true,
+      message: `[PROJECT CREATED] ${name} (${code}) created successfully!`,
+      project: newPrj,
+      projects: projects
+    });
+  } catch (err) {
+    console.error("SERVER CRASH IN CREATE-PROJECT:", err);
+    return res.status(500).json({ success: false, message: "Server error: " + err.message });
+  }
 });
 
 app.get('/api/projects', (req, res) => {
